@@ -63,6 +63,47 @@ function helpText(): string {
   ].join('\n')
 }
 
+async function handlePrice(replyToken: string, rawArgs: string) {
+  const symbol = (rawArgs || '').trim()
+
+  if (!symbol) {
+    return replyText(replyToken, '請提供股票代號，例如：股價 2330')
+  }
+
+  const now = new Date().toLocaleString('zh-TW', { hour12: false })
+
+  const mock = {
+    symbol,
+    name: '示範公司',
+    price: 123.45,
+    change: -1.23,
+    percent: -0.99,
+    prevClose: 124.68,
+    open: 125.0
+  }
+
+  const msg =
+    `${mock.name}（${mock.symbol}）\n` +
+    `價格：${mock.price}（${mock.change}，${mock.percent}%）\n` +
+    `今開：${mock.open}  昨收：${mock.prevClose}\n` +
+    `時間：${now}\n` +
+    `— 這是範例資料；稍後改為即時/延遲行情`
+  return replyText(replyToken, msg)
+}
+
+async function handleNews(replyToken: string, rawArg: string) {
+  const kw = (rawArg || '').trim()
+  if (!kw) return replyText(replyToken, '用法：新聞 <產業|代號>，例如「新聞 半導體」或「新聞 2330」')
+  // 假資料列表
+  const items = [
+    { t: `${kw} 市場動態：需求回溫`, s: 'FinDaily', ts: '2 小時前' },
+    { t: `${kw} 供應鏈：庫存趨正常`, s: 'TechBiz', ts: '5 小時前' },
+    { t: `${kw} 法說重點與展望`, s: 'MoneyNews', ts: '昨天' }
+  ]
+  const text = ['最新新聞（示範）：', ...items.map(i => `• ${i.t}（${i.s}｜${i.ts}）`), '— 之後改成真實來源與連結'].join('\n')
+  return replyText(replyToken, text)
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== 'POST') {
     res.statusCode = 405
@@ -101,9 +142,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   for (const ev of events) {
     if (ev.type === 'message' && ev.message?.type === 'text' && ev.replyToken) {
-      const { cmd } = parseCommand(String(ev.message.text || ''))
+      const { cmd, args } = parseCommand(String(ev.message.text || ''))
       if (cmd === 'help' || cmd === '？' || cmd === '/help') {
         await replyText(ev.replyToken, helpText())
+      }
+      if (cmd === '股價' || cmd === 'price') {
+        await handlePrice(ev.replyToken, args); continue
+      }
+      if (cmd === '新聞' || cmd === 'news') {
+        await handleNews(ev.replyToken, args); continue
+      }
+      if (cmd === '+自選' || cmd === '-自選') {
+        await replyText(ev.replyToken, '自選股維護將在下一步開放'); continue
       } else {
         // 先回教學文；下一步再接真正的指令路由
         await replyText(ev.replyToken, '輸入「help」查看指令。')
