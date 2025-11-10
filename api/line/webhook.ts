@@ -2,6 +2,10 @@
 import type { IncomingMessage, ServerResponse } from 'http'
 import crypto from 'node:crypto'
 
+/* ---------------- reply helpers ---------------- */
+const LINE_REPLY_ENDPOINT = 'https://api.line.me/v2/bot/message/reply'
+
+
 // 讀 raw body，供驗簽與 JSON 解析
 function readRawBody(req: IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -20,6 +24,132 @@ function verifyLineSignature(raw: Buffer, signature: string | string[] | undefin
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(hmac))
   } catch {
     return false
+  }
+}
+
+async function replyFlex(replyToken: string, altText: string, flex: any) {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN
+  if (!token) {
+    console.error('Missing LINE_CHANNEL_ACCESS_TOKEN')
+    return
+  }
+
+  const payload = {
+    replyToken,
+    message: [{ type: 'flex', altText, contents: flex }]
+  }
+
+  const response = await fetch(LINE_REPLY_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  })
+
+  if (!response.ok) {
+    console.error('LINE reply error', response.status, await response.text())
+  }
+}
+
+function buildPriceFlex(symbol: string) {
+  const now = new Date().toLocaleString('zh-TW', { hour12: false })
+
+  const mock = {
+    symbol,
+    name: '示範公司',
+    price: 123.45,
+    change: -1.23,
+    percent: -0.99,
+    open: 125,
+    prevClose: 124.68
+  }
+
+  const color = mock.change >= 0 ? '#E74C3C' : '#3498DB'
+  const changeText = `${mock.change >= 0 ? '+' : ''}${mock.change} (${mock.percent}%)`
+  return {
+    type: 'bubble',
+    size: 'mega',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: `${mock.name} (${mock.symbol})`,
+          weight: 'bold',
+          size: 'md'
+        },
+        {
+          type: 'text',
+          text: `${mock.price}`,
+          weight: 'bold',
+          size: 'xxl',
+          color
+        },
+        {
+          type: 'text',
+          text: changeText,
+          size: 'sm',
+          color
+        },
+        {
+          type: 'box',
+          layout: 'baseline',
+          spacing: 'sm',
+          contents: [
+            { type: 'text', text: `今開 ${mock.open}`, size: 'sm', color: '#666666' },
+            { type: 'text', text: `昨收 ${mock.prevClose}`, size: 'sm', color: '#666666' }
+          ]
+        },
+        {
+          type: 'text',
+          text: `更新時間：${now}`,
+          size: 'xs',
+          color: '#aaaaaa'
+        }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'button', style: 'primary', color: '#2ECC71', action: { type: 'message', label: '查看新聞', text: `新聞 ${symbol}` } },
+        { type: 'button', style: 'secondary', action: { type: 'message', label: '加入自選', text: `+自選 ${symbol}` } }
+      ]
+    }
+  }
+}
+
+function buildNewsFlex(keyword: string) {
+  const items = [
+    { title: `${keyword} 市場動態：需求回溫`, source: 'FinDaily', time: '2 小時前' },
+    { title: `${keyword} 供應鏈：庫存趨正常`, source: 'TechBiz', time: '5 小時前' },
+    { title: `${keyword} 法說重點與展望`, source: 'MoneyNews', time: '昨天' }
+  ]
+  return {
+    type: 'carousel',
+    contents: items.map((n) => ({
+      type: 'bubble',
+      size: 'micro',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          { type: 'text', text: n.title, wrap: true, weight: 'bold', size: 'sm' },
+          { type: 'text', text: `${n.source}・${n.time}`, size: 'xs', color: '#888888' }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          { type: 'button', style: 'link', action: { type: 'message', label: '更多新聞', text: `新聞 ${keyword}` } }
+        ]
+      }
+    }))
   }
 }
 
@@ -144,19 +274,38 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (ev.type === 'message' && ev.message?.type === 'text' && ev.replyToken) {
       const { cmd, args } = parseCommand(String(ev.message.text || ''))
       if (cmd === 'help' || cmd === '？' || cmd === '/help') {
-        await replyText(ev.replyToken, helpText())
-      }
-      if (cmd === '股價' || cmd === 'price') {
-        await handlePrice(ev.replyToken, args); continue
-      }
-      if (cmd === '新聞' || cmd === 'news') {
-        await handleNews(ev.replyToken, args); continue
-      }
-      if (cmd === '+自選' || cmd === '-自選') {
+        await replyFlex(ev.replyToken, '指令說明', {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              { type: 'text', text: '可用指令', weight: 'bold', size: 'lg' },
+              { type: 'text', text: '• 股價 <代號>\n• 新聞 <關鍵字>\n• help', wrap: true }
+            ]
+          }
+        })
+      } else if (cmd === '股價' || cmd === 'price') {
+        const flex = buildPriceFlex(args || '2330')
+        await replyFlex(ev.replyToken, `股價 ${args}`, flex);
+      } else if (cmd === '新聞' || cmd === 'news') {
+        const flex = buildNewsFlex(args || '半導體')
+        await replyFlex(ev.replyToken, `新聞 ${args}`, flex);
+      } else  if (cmd === '+自選' || cmd === '-自選') {
         await replyText(ev.replyToken, '自選股維護將在下一步開放'); continue
       } else {
         // 先回教學文；下一步再接真正的指令路由
-        await replyText(ev.replyToken, '輸入「help」查看指令。')
+         await replyFlex(ev.replyToken, '提示', {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              { type: 'text', text: '提示', weight: 'bold', size: 'lg' },
+              { type: 'text', text: '輸入「help」查看指令。', wrap: true }
+            ]
+          }
+        })
       }
     } else if (ev.type === 'follow' && ev.replyToken) {
       await replyText(ev.replyToken, '感謝加入。輸入「help」查看可用指令。')
