@@ -1,15 +1,9 @@
 // api/line/webhook.ts
+import { getQuoteWithFallback, getIndustryNews } from '../../lib/providers'
+import { buildPriceFlexFromData, buildNewsFlexFromItems } from '../../lib/flex'
+
 import type { IncomingMessage, ServerResponse } from 'http'
 import crypto from 'node:crypto'
-
-// 公用格式器
-const fmt = {
-  n: (x: number) => (isFinite(x) ? x.toFixed(2) : '-'),
-  pct: (x: number) => (isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}%` : '-'),
-  chg: (x: number) => (isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}` : '-'),
-  time: () => new Date().toLocaleString('zh-TW', { hour12: false }),
-  trend: (x: number) => (x >= 0 ? { arrow: '▲', color: '#D32F2F' } : { arrow: '▼', color: '#1976D2' })
-}
 
 
 /* ---------- utils ---------- */
@@ -67,116 +61,6 @@ async function replyFlex(replyToken: string, altText: string, flex: any) {
   if (!r.ok) console.error('LINE replyFlex error', r.status, text)
 }
 
-/* ---------- minimal Flex templates ---------- */
-function buildPriceFlex(symbol: string) {
-  // 先用 mock。之後接真實數據直接對應欄位即可。
-  const data = { name: '示範公司', symbol, price: 123.45, change: -1.23, percent: -0.99, open: 125, prevClose: 124.68, high: 128.3, low: 121.9 }
-  const t = fmt.trend(data.change)
-
-  return {
-    type: 'bubble',
-    size: 'mega',
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'md',
-      contents: [
-        { type: 'text', text: `${data.name}（${data.symbol}）`, weight: 'bold', size: 'md' },
-        { type: 'text', text: fmt.n(data.price), weight: 'bold', size: '3xl', color: t.color },
-        { type: 'text', text: `${t.arrow} ${fmt.chg(data.change)}（${fmt.pct(data.percent)}）`, size: 'sm', color: t.color },
-        {
-          type: 'box',
-          layout: 'vertical',
-          margin: 'md',
-          backgroundColor: '#F7F7F7',
-          cornerRadius: 'lg',
-          paddingAll: '10px',
-          contents: [
-            {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [
-                { type: 'text', text: '今開', size: 'sm', color: '#666666', flex: 2 },
-                { type: 'text', text: fmt.n(data.open), size: 'sm', color: '#111111', align: 'end', flex: 3 }
-              ]
-            },
-            {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [
-                { type: 'text', text: '昨收', size: 'sm', color: '#666666', flex: 2 },
-                { type: 'text', text: fmt.n(data.prevClose), size: 'sm', color: '#111111', align: 'end', flex: 3 }
-              ]
-            },
-            {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [
-                { type: 'text', text: '最高', size: 'sm', color: '#666666', flex: 2 },
-                { type: 'text', text: fmt.n(data.high), size: 'sm', color: '#111111', align: 'end', flex: 3 }
-              ]
-            },
-            {
-              type: 'box',
-              layout: 'horizontal',
-              contents: [
-                { type: 'text', text: '最低', size: 'sm', color: '#666666', flex: 2 },
-                { type: 'text', text: fmt.n(data.low), size: 'sm', color: '#111111', align: 'end', flex: 3 }
-              ]
-            }
-          ]
-        },
-        { type: 'text', text: `更新：${fmt.time()}`, size: 'xs', color: '#999999' }
-      ]
-    },
-    footer: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'sm',
-      contents: [
-        { type: 'button', style: 'primary', color: '#2E7D32', action: { type: 'message', label: '查看新聞', text: `新聞 ${symbol}` } },
-        { type: 'button', style: 'secondary', action: { type: 'message', label: '加入自選', text: `+自選 ${symbol}` } }
-      ]
-    }
-  }
-}
-
-
-function buildNewsFlex(keyword: string) {
-  const items = [
-    { title: `${keyword} 市場動態：需求回溫`, source: 'FinDaily', time: '2 小時前' },
-    { title: `${keyword} 供應鏈：庫存趨正常`, source: 'TechBiz', time: '5 小時前' },
-    { title: `${keyword} 法說重點與展望`, source: 'MoneyNews', time: '昨天' }
-  ]
-
-  const bubbles = items.map((n, idx) => ({
-    type: 'bubble',
-    size: 'kilo',
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'sm',
-      contents: [
-        { type: 'text', text: n.title, wrap: true, weight: 'bold', size: 'sm' },
-        { type: 'text', text: `${n.source}・${n.time}`, size: 'xs', color: '#888888' }
-      ]
-    },
-    footer: {
-      type: 'box',
-      layout: 'vertical',
-      contents: [
-        { type: 'button', style: 'link', action: { type: 'message', label: '更多同主題', text: `新聞 ${keyword}` } },
-        ...(idx === items.length - 1
-          ? [{ type: 'button', style: 'secondary', action: { type: 'message', label: '回股價', text: `股價 2330` } }]
-          : [])
-      ]
-    }
-  }))
-
-  return { type: 'carousel', contents: bubbles }
-}
-
-
 /* ---------- command parsing ---------- */
 function parseCommand(text: string): { cmd: string; args: string } {
   const t = text.trim()
@@ -224,9 +108,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       if (cmd === 'help' || cmd === '/help' || cmd === '？') {
         await replyFlex(ev.replyToken, '可用指令', buildHelpFlex())
       } else if (cmd === '股價' || cmd === 'price') {
-        await replyFlex(ev.replyToken, `股價 ${args}`, buildPriceFlex(args || '2330'))
+        const quote = await getQuoteWithFallback(args || '2330')
+        const flex = buildPriceFlexFromData(quote) // 你既有的模板函式改從 quote 給值
+        await replyFlex(ev.replyToken, `股價 ${quote.symbol}`, flex)
       } else if (cmd === '新聞' || cmd === 'news') {
-        await replyFlex(ev.replyToken, `新聞 ${args}`, buildNewsFlex(args || '半導體'))
+        const items = await getIndustryNews(args || '半導體', 5)
+        const flex = buildNewsFlexFromItems(args || '半導體', items)
+        await replyFlex(ev.replyToken, `新聞 ${args}`, flex)
       } else {
         await replyText(ev.replyToken, '輸入「help」查看指令。')
       }
