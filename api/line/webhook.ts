@@ -1,6 +1,8 @@
 // api/line/webhook.ts
 import { getQuoteWithFallback, getIndustryNews } from '../../lib/providers'
-import { buildPriceFlexFromData, buildNewsFlexFromItems } from '../../lib/flex'
+import { buildPriceFlexFromData, buildNewsFlexFromItems, buildStatusFlex } from '../../lib/flex'
+import { logger } from '../../lib/logger'
+import { resolveSymbol } from '../../lib/symbol'
 
 import type { IncomingMessage, ServerResponse } from 'http'
 import crypto from 'node:crypto'
@@ -34,7 +36,10 @@ async function replyText(replyToken: string, text: string) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload)
   })
-  if (!r.ok) console.error('LINE replyText error', r.status, await r.text())
+  if (!r.ok) {
+    const errorText = await r.text()
+    logger.error('line_reply_text_failed', { status: r.status, error: errorText })
+  }
 }
 
 async function replyFlex(replyToken: string, altText: string, flex: any) {
@@ -50,7 +55,7 @@ async function replyFlex(replyToken: string, altText: string, flex: any) {
   const payload = { replyToken, messages: [{ type: 'flex', altText, contents: flex }] }
 
   // 調試：檢查 messages 有值
-  // console.log('replyFlex payload', JSON.stringify(payload))
+  // logger.debug('replyFlex payload', { payload: JSON.stringify(payload) })
 
   const r = await fetch(REPLY_URL, {
     method: 'POST',
@@ -58,7 +63,9 @@ async function replyFlex(replyToken: string, altText: string, flex: any) {
     body: JSON.stringify(payload)
   })
   const text = await r.text()
-  if (!r.ok) console.error('LINE replyFlex error', r.status, text)
+  if (!r.ok) {
+    logger.error('line_reply_flex_failed', { status: r.status, error: text })
+  }
 }
 
 /* ---------- command parsing ---------- */
@@ -84,39 +91,72 @@ function buildHelpFlex() {
 
 /* ---------- main handler ---------- */
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
-  if (req.method !== 'POST') { res.statusCode = 405; res.end('Method Not Allowed'); return }
+  logger.webhookRequest(req.method || 'UNKNOWN', req.url || '/api/line/webhook')
+
+  if (req.method !== 'POST') {
+    res.statusCode = 405
+    res.end('Method Not Allowed')
+    return
+  }
 
   const raw = await readRawBody(req)
 
   const skip = process.env.DEBUG === 'True'
-  if (skip) {
+  if (!skip) {
     const secret = process.env.LINE_CHANNEL_SECRET || ''
     const signature = req.headers['x-line-signature'] as string | undefined
     if (!secret || !verifyLineSignature(raw, signature, secret)) {
-      res.statusCode = 401; res.end('Invalid signature'); return
+      logger.warn('webhook_signature_invalid', { hasSecret: !!secret, hasSignature: !!signature })
+      res.statusCode = 401
+      res.end('Invalid signature')
+      return
     }
   }
 
   let payload: any
-  try { payload = JSON.parse(raw.toString('utf8')) } catch { res.statusCode = 400; res.end('Bad JSON'); return }
+  try {
+    payload = JSON.parse(raw.toString('utf8'))
+  } catch (e) {
+    logger.error('webhook_invalid_json', {}, e instanceof Error ? e : String(e))
+    res.statusCode = 400
+    res.end('Bad JSON')
+    return
+  }
 
   const events: any[] = Array.isArray(payload?.events) ? payload.events : []
   for (const ev of events) {
     if (ev.type === 'message' && ev.message?.type === 'text' && ev.replyToken) {
       const { cmd, args } = parseCommand(String(ev.message.text || ''))
+      logger.info('webhook_command', { cmd, args })
 
-      if (cmd === 'help' || cmd === '/help' || cmd === '？') {
-        await replyFlex(ev.replyToken, '可用指令', buildHelpFlex())
-      } else if (cmd === '股價' || cmd === 'price') {
-        const quote = await getQuoteWithFallback(args || '2330')
-        const flex = buildPriceFlexFromData(quote) // 你既有的模板函式改從 quote 給值
-        await replyFlex(ev.replyToken, `股價 ${quote.symbol}`, flex)
-      } else if (cmd === '新聞' || cmd === 'news') {
-        const items = await getIndustryNews(args || '半導體', 5)
-        const flex = buildNewsFlexFromItems(args || '半導體', items)
-        await replyFlex(ev.replyToken, `新聞 ${args}`, flex)
-      } else {
-        await replyText(ev.replyToken, '輸入「help」查看指令。')
+      try {
+        if (cmd === 'help' || cmd === '/help' || cmd === '？' || cmd === '幫助') {
+          await replyFlex(ev.replyToken, '可用指令', buildHelpFlex())
+        } else if (cmd === '股價' || cmd === 'price') {
+          const resolvedSymbol = resolveSymbol(args || '2330')
+          const quote = await getQuoteWithFallback(resolvedSymbol)
+          const flex = buildPriceFlexFromData(quote)
+          await replyFlex(ev.replyToken, `股價 ${quote.symbol}`, flex)
+        } else if (cmd === '新聞' || cmd === 'news') {
+          const items = await getIndustryNews(args || '半導體', 5)
+          const flex = buildNewsFlexFromItems(args || '半導體', items)
+          await replyFlex(ev.replyToken, `新聞 ${args}`, flex)
+        } else {
+          const helpFlex = buildStatusFlex(
+            '未知指令',
+            '請輸入「help」查看可用指令。',
+            'info'
+          )
+          await replyFlex(ev.replyToken, '未知指令', helpFlex)
+        }
+      } catch (error) {
+        logger.webhookError(error instanceof Error ? error : String(error), { cmd, args })
+        const errorFlex = buildStatusFlex(
+          '處理指令時發生錯誤',
+          '系統暫時無法處理您的請求，請稍後再試。',
+          'error'
+        )
+        await replyFlex(ev.replyToken, '發生錯誤', errorFlex)
       }
     }
   }

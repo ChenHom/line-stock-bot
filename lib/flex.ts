@@ -112,3 +112,30 @@ export function buildNewsFlexFromItems(keyword: string, items: NewsItem[]) {
 
   return { type: 'carousel', contents: bubbles }
 }
+
+/**
+ * Build a simple error/status message Flex bubble
+ */
+export function buildStatusFlex(title: string, message: string, type: 'info' | 'warning' | 'error' = 'info') {
+  const colors = {
+    info: { bg: '#E3F2FD', text: '#1976D2' },
+    warning: { bg: '#FFF3E0', text: '#F57C00' },
+    error: { bg: '#FFEBEE', text: '#D32F2F' }
+  }
+  const color = colors[type]
+
+  return {
+    type: 'bubble',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'md',
+      paddingAll: '20px',
+      backgroundColor: color.bg,
+      contents: [
+        { type: 'text', text: title, weight: 'bold', size: 'lg', color: color.text, wrap: true },
+        { type: 'text', text: message, size: 'sm', color: '#666', wrap: true, margin: 'md' }
+      ]
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { Quote } from '../../types'
+import { Quote, QuoteSchema } from '../../schemas'
 
 export async function getQuoteTwseDaily(symbol: string): Promise<Quote> {
   // 以 TWSE 日資料近似，非即時；做為備援兜底
@@ -18,7 +18,7 @@ export async function getQuoteTwseDaily(symbol: string): Promise<Quote> {
   const close = Number((last[6] || '').toString().replace(/,/g, ''))
   const chg = Number((last[7] || '0').toString().replace(/[,+]/g, ''))
 
-  return {
+  const quote = {
     symbol,
     marketSymbol: symbol + '.TW',
     name: undefined,
@@ -31,4 +31,7 @@ export async function getQuoteTwseDaily(symbol: string): Promise<Quote> {
     marketTime: undefined,
     delayed: true
   }
+
+  // Validate with Zod schema
+  return QuoteSchema.parse(quote)
 }

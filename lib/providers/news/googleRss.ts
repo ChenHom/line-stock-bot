@@ -1,4 +1,5 @@
-import { NewsItem } from '../../types'
+import { NewsItem, NewsItemSchema } from '../../schemas'
+import { z } from 'zod'
 
 export async function getNewsGoogleRss(keyword: string, limit = 5): Promise<NewsItem[]> {
   const base = 'https://news.google.com/rss/search'
@@ -10,7 +11,7 @@ export async function getNewsGoogleRss(keyword: string, limit = 5): Promise<News
 
   // 非嚴格 XML 解析，取常見項目
   const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, limit)
-  return items.map(m => {
+  const newsItems = items.map(m => {
     const block = m[1]
     const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] ||
                    block.match(/<title>(.*?)<\/title>/)?.[1] || '').trim()
@@ -20,4 +21,7 @@ export async function getNewsGoogleRss(keyword: string, limit = 5): Promise<News
     const publishedAt = pub ? new Date(pub).toISOString() : undefined
     return { title, url: link, source, publishedAt }
   })
+
+  // Validate with Zod schema array
+  return z.array(NewsItemSchema).parse(newsItems)
 }

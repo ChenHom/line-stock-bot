@@ -1,5 +1,5 @@
 import { toMarketSymbol } from '../../symbol'
-import { Quote } from '../../types'
+import { Quote, QuoteSchema } from '../../schemas'
 
 const Y_URL = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols='
 
@@ -15,7 +15,7 @@ export async function getQuoteYahoo(rawSymbol: string): Promise<Quote> {
   const change = Number(q.regularMarketChange ?? 0)
   const changePercent = Number(q.regularMarketChangePercent ?? 0)
 
-  return {
+  const quote = {
     symbol: rawSymbol,
     marketSymbol,
     name: q.longName || q.shortName,
@@ -30,4 +30,7 @@ export async function getQuoteYahoo(rawSymbol: string): Promise<Quote> {
     marketTime: q.regularMarketTime ? new Date(q.regularMarketTime * 1000).toISOString() : undefined,
     delayed: true
   }
+
+  // Validate with Zod schema
+  return QuoteSchema.parse(quote)
 }

@@ -1,4 +1,5 @@
-import type { NewsItem } from '../../types'
+import { NewsItem, NewsItemSchema } from '../../schemas'
+import { z } from 'zod'
 
 // 這裡示範：以關鍵字回 Yahoo Finance 搜尋 RSS（實務可換特定媒體 RSS）
 export async function getNewsYahooRss(keyword: string, limit = 5): Promise<NewsItem[]> {
@@ -7,7 +8,7 @@ export async function getNewsYahooRss(keyword: string, limit = 5): Promise<NewsI
   if (!r.ok) throw new Error(`Yahoo RSS http ${r.status}`)
   const xml = await r.text()
   const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, limit)
-  return items.map(m => {
+  const newsItems = items.map(m => {
     const b = m[1]
     const title = (b.match(/<title>(.*?)<\/title>/)?.[1] || '').trim()
     const link = (b.match(/<link>(.*?)<\/link>/)?.[1] || '').trim()
@@ -15,4 +16,7 @@ export async function getNewsYahooRss(keyword: string, limit = 5): Promise<NewsI
     const publishedAt = pub ? new Date(pub).toISOString() : undefined
     return { title, url: link, source: 'Yahoo', publishedAt }
   })
+
+  // Validate with Zod schema array
+  return z.array(NewsItemSchema).parse(newsItems)
 }
