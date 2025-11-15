@@ -1,6 +1,6 @@
 // api/line/webhook.ts
 import { getQuoteWithFallback, getIndustryNews } from '../../lib/providers'
-import { createStockQuoteMessage, createNewsListMessage, buildStatusFlex } from '../../lib/flex'
+import { createStockQuoteMessage, createNewsListMessage, buildStatusFlex, createHelpMessage } from '../../lib/flex'
 import { logger } from '../../lib/logger'
 import { fuzzyMatchSymbol } from '../../lib/symbol'
 
@@ -75,22 +75,9 @@ function parseCommand(text: string): { cmd: string; args: string } {
   return { cmd: (head || '').toLowerCase(), args: rest.join(' ') }
 }
 
-function buildHelpFlex() {
-  return {
-    type: 'bubble',
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      contents: [
-        { type: 'text', text: '可用指令', weight: 'bold', size: 'lg' },
-        { type: 'text', text: '• 股價 <代號>\n• 新聞 <關鍵字>\n• help', wrap: true }
-      ]
-    }
-  }
-}
-
 /* ---------- main handler ---------- */
 const STOCK_CODE_REGEX = /^\d{4}$/
+const HELP_ALIASES = new Set(['help', '/help', '幫助', '？'])
 const BROAD_NEWS_KEYWORDS = new Set([
   'news',
   '新聞',
@@ -149,19 +136,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       logger.info('webhook_command', { cmd, args })
 
       try {
-        if (cmd === 'help' || cmd === '/help' || cmd === '？' || cmd === '幫助') {
-          await replyFlex(ev.replyToken, '可用指令', buildHelpFlex())
+        if (HELP_ALIASES.has(cmd)) {
+          await replyFlex(ev.replyToken, '可用指令', createHelpMessage())
         } else if (cmd === '股價' || cmd === 'price') {
           await handleStockQuoteCommand(ev.replyToken, args)
         } else if (cmd === '新聞' || cmd === 'news') {
           await handleNewsCommand(ev.replyToken, args)
         } else {
-          const helpFlex = buildStatusFlex(
-            '未知指令',
-            '請輸入「help」查看可用指令。',
-            'info'
-          )
-          await replyFlex(ev.replyToken, '未知指令', helpFlex)
+          const helpFlex = createHelpMessage({
+            title: '無法識別的指令',
+            contextNote: '請輸入「help」或直接點選下方範例重新查詢。'
+          })
+          await replyFlex(ev.replyToken, '無法識別的指令', helpFlex)
         }
       } catch (error) {
         logger.webhookError(error instanceof Error ? error : String(error), { cmd, args })

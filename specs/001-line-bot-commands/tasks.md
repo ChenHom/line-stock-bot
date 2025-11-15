@@ -9,7 +9,7 @@ description: "Task list for implementing LINE bot commands and required infra ad
 **Input**: Design documents from `spec.md`, `plan.md`, `data-model.md`, `contracts/`
 
 **Total Tasks**: 32  
-**Completion**: 15/32 (46.9%)
+**Completion**: 18/32 (56.3%)
 
 ---
 
@@ -149,9 +149,9 @@ description: "Task list for implementing LINE bot commands and required infra ad
 
 ### Tasks
 
-- [ ] T026 [P] [US3] Create Flex Message template for help command in lib/flex.ts (createHelpMessage)
-- [ ] T027 [US3] Implement help command handler with alias support (help/幫助) in api/line/webhook.ts
-- [ ] T028 [US3] Implement unknown command handler with help suggestion in api/line/webhook.ts
+- [X] T026 [P] [US3] Create Flex Message template for help command in lib/flex.ts (createHelpMessage)
+- [X] T027 [US3] Implement help command handler with alias support (help/幫助) in api/line/webhook.ts
+- [X] T028 [US3] Implement unknown command handler with help suggestion in api/line/webhook.ts
 
 **Dependencies**: Requires Phase 1-2 completion. Can be developed in parallel with Phase 3-4.
 

@@ -149,6 +149,7 @@ describe('Webhook Integration Tests', () => {
       expect(body.messages[0].type).toBe('flex')
       expect(body.messages[0].altText).toBe('可用指令')
       expect(body.messages[0].contents.type).toBe('bubble')
+      expect(JSON.stringify(body.messages[0].contents)).toContain('股價 <代號或名稱>')
     })
 
     it('should handle "幫助" command alias and reply with Flex message', async () => {
@@ -158,6 +159,7 @@ describe('Webhook Integration Tests', () => {
       const body = JSON.parse(callArgs[1].body)
       expect(body.messages[0].type).toBe('flex')
       expect(body.messages[0].altText).toBe('可用指令')
+      expect(JSON.stringify(body.messages[0].contents)).toContain('help / 幫助')
     })
 
     it('should handle "股價 2330" command and reply with quote Flex', async () => {
@@ -269,14 +271,15 @@ describe('Webhook Integration Tests', () => {
       expect(body.messages[0].contents.type).toBe('bubble')
     })
 
-    it('should handle unknown command and reply with status Flex', async () => {
+    it('should handle unknown command and reply with help suggestion Flex', async () => {
       await sendCommand('unknown-command')
 
       const callArgs = mockFetch.mock.calls[0]
       const body = JSON.parse(callArgs[1].body)
       expect(body.messages[0].type).toBe('flex')
-      expect(body.messages[0].altText).toBe('未知指令')
+      expect(body.messages[0].altText).toBe('無法識別的指令')
       expect(body.messages[0].contents.type).toBe('bubble')
+      expect(JSON.stringify(body.messages[0].contents)).toContain('請輸入「help」或直接點選下方範例重新查詢')
     })
 
     it('should handle provider error and reply with error Flex', async () => {

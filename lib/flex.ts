@@ -14,6 +14,24 @@ const fmt = {
       : { arrow: '▲', color: '#D32F2F' }
 }
 
+const HELP_COMMANDS = [
+  {
+    title: '股價 <代號或名稱>',
+    description: '查詢即時股價，支援代號或公司名稱，並會自動套用模糊比對。',
+    example: '股價 2330'
+  },
+  {
+    title: '新聞 <公司或產業>',
+    description: '取得指定公司或產業的最新新聞，建議輸入具體關鍵字。',
+    example: '新聞 半導體'
+  },
+  {
+    title: 'help / 幫助',
+    description: '顯示所有支援的指令與使用範例，適合新使用者快速上手。',
+    example: 'help'
+  }
+]
+
 export function createStockQuoteMessage(quote: Quote, options?: { isStale?: boolean }) {
   const { isStale } = options || {}
   const trend = fmt.trend(quote.change)
@@ -217,4 +235,66 @@ function createStaleNoticeBubble(keyword: string) {
 function truncateText(value: string, length: number): string {
   if (value.length <= length) return value
   return `${value.slice(0, length - 1)}…`
+}
+
+export function createHelpMessage(options?: { title?: string; contextNote?: string }) {
+  const title = options?.title ?? '指令使用說明'
+  const contextNote = options?.contextNote
+
+  const bodyContents: any[] = [
+    { type: 'text', text: title, weight: 'bold', size: 'lg', wrap: true }
+  ]
+
+  if (contextNote) {
+    bodyContents.push({ type: 'text', text: contextNote, size: 'xs', color: '#F57C00', wrap: true })
+  }
+
+  bodyContents.push({ type: 'text', text: '依照下列格式輸入即可快速取得資訊：', size: 'xs', color: '#7A869A', wrap: true })
+
+  bodyContents.push(
+    ...HELP_COMMANDS.map((cmd) => ({
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'xs',
+      margin: 'md',
+      paddingAll: '12px',
+      backgroundColor: '#F5F7FB',
+      cornerRadius: 'md',
+      contents: [
+        { type: 'text', text: cmd.title, weight: 'bold', size: 'sm', color: '#0D47A1', wrap: true },
+        { type: 'text', text: cmd.description, size: 'xs', color: '#4E5D78', wrap: true },
+        { type: 'text', text: `範例：${cmd.example}`, size: 'xs', color: '#90A4AE', wrap: true }
+      ]
+    }))
+  )
+
+  const footerContents: any[] = [
+    { type: 'text', text: '快速試試看', size: 'xs', color: '#7A869A' },
+    {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      contents: [
+        { type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label: '查股價', text: '股價 2330' } },
+        { type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label: '看新聞', text: '新聞 台積電' } }
+      ]
+    }
+  ]
+
+  return {
+    type: 'bubble' as const,
+    size: 'mega' as const,
+    body: {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      spacing: 'sm' as const,
+      contents: bodyContents
+    },
+    footer: {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      spacing: 'sm' as const,
+      contents: footerContents
+    }
+  }
 }
