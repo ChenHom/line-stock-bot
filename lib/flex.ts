@@ -220,13 +220,25 @@ function createNewsBubble(keyword: string, news: NewsItem) {
 function createStaleNoticeBubble(keyword: string) {
   return {
     type: 'bubble' as const,
+    size: 'kilo' as const,
     body: {
       type: 'box' as const,
       layout: 'vertical' as const,
       spacing: 'sm' as const,
       contents: [
         { type: 'text', text: `新聞 ${keyword}`, size: 'sm', weight: 'bold', color: '#F57C00', wrap: true },
-        { type: 'text', text: '資料可能稍有延遲', size: 'xs', color: '#F57C00' }
+        { type: 'text', text: '資料可能稍有延遲，提供最近可用的資訊。', size: 'xs', color: '#F57C00', wrap: true }
+      ]
+    },
+    footer: {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      contents: [
+        {
+          type: 'button' as const,
+          style: 'secondary' as const,
+          action: { type: 'message' as const, label: '重新查詢', text: `新聞 ${keyword}` }
+        }
       ]
     }
   }
