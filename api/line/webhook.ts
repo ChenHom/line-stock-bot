@@ -1,6 +1,6 @@
 // api/line/webhook.ts
 import { getQuoteWithFallback, getIndustryNews } from '../../lib/providers'
-import { createStockQuoteMessage, buildNewsFlexFromItems, buildStatusFlex } from '../../lib/flex'
+import { createStockQuoteMessage, createNewsListMessage, buildStatusFlex } from '../../lib/flex'
 import { logger } from '../../lib/logger'
 import { fuzzyMatchSymbol } from '../../lib/symbol'
 
@@ -91,6 +91,23 @@ function buildHelpFlex() {
 
 /* ---------- main handler ---------- */
 const STOCK_CODE_REGEX = /^\d{4}$/
+const BROAD_NEWS_KEYWORDS = new Set([
+  'news',
+  '新聞',
+  '股票',
+  '股價',
+  '股市',
+  '市場',
+  'finance',
+  'financial',
+  'investment',
+  'invest',
+  'business',
+  'economy',
+  '產業',
+  '行業',
+  'industry'
+])
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   logger.webhookRequest(req.method || 'UNKNOWN', req.url || '/api/line/webhook')
@@ -137,9 +154,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         } else if (cmd === '股價' || cmd === 'price') {
           await handleStockQuoteCommand(ev.replyToken, args)
         } else if (cmd === '新聞' || cmd === 'news') {
-          const items = await getIndustryNews(args || '半導體', 5)
-          const flex = buildNewsFlexFromItems(args || '半導體', items)
-          await replyFlex(ev.replyToken, `新聞 ${args}`, flex)
+          await handleNewsCommand(ev.replyToken, args)
         } else {
           const helpFlex = buildStatusFlex(
             '未知指令',
@@ -210,4 +225,59 @@ async function handleStockQuoteCommand(replyToken: string, rawArgs: string) {
 function isNotFoundError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return /(empty|not\s*found|unknown\s*symbol|invalid\s*symbol)/i.test(message)
+}
+
+async function handleNewsCommand(replyToken: string, rawArgs: string) {
+  const keyword = normalizeNewsKeyword(rawArgs)
+
+  if (!keyword) {
+    await replyFlex(
+      replyToken,
+      '缺少新聞關鍵字',
+      buildStatusFlex('請輸入新聞關鍵字', '請輸入「新聞 <公司或產業>」再試一次。', 'info')
+    )
+    return
+  }
+
+  if (isBroadNewsKeyword(keyword)) {
+    await replyFlex(
+      replyToken,
+      '請輸入更具體的關鍵字',
+      buildStatusFlex('關鍵字太廣泛', '請輸入更具體的公司名稱或產業，例如「新聞 台積電」。', 'info')
+    )
+    return
+  }
+
+  try {
+    const newsItems = await getIndustryNews(keyword, 5)
+    if (!newsItems.length) {
+      await replyFlex(
+        replyToken,
+        `新聞 ${keyword}`,
+        buildStatusFlex('找不到相關新聞', '請換個關鍵字或稍後再試。', 'info')
+      )
+      return
+    }
+
+    const flex = createNewsListMessage(keyword, newsItems, {
+      isStale: Boolean((newsItems as any).isStale)
+    })
+    await replyFlex(replyToken, `新聞 ${keyword}`, flex)
+  } catch (error) {
+    logger.warn('news_command_failed', { keyword }, error instanceof Error ? error : String(error))
+    const flex = buildStatusFlex('目前無法取得新聞', '新聞來源暫時不可用，請稍後再試。', 'warning')
+    await replyFlex(replyToken, '新聞服務暫時不可用', flex)
+  }
+}
+
+function normalizeNewsKeyword(input: string): string {
+  return (input || '').replace(/\s+/g, ' ').trim()
+}
+
+function isBroadNewsKeyword(keyword: string): boolean {
+  const normalized = keyword.trim().toLowerCase()
+  if (!normalized || normalized.length < 2) {
+    return true
+  }
+  return BROAD_NEWS_KEYWORDS.has(normalized)
 }

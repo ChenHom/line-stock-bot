@@ -1,22 +1,40 @@
-import { NewsItem, NewsItemSchema } from '../../schemas'
-import { z } from 'zod'
+import { NewsItem } from '../../schemas'
+import { buildNewsList, extractItemBlocks, extractTag, normalizeUrl, parsePublishedDate, sanitizeText } from './rssUtils'
 
-// 這裡示範：以關鍵字回 Yahoo Finance 搜尋 RSS（實務可換特定媒體 RSS）
+const REQUEST_HEADERS = {
+  'User-Agent': 'line-stock-bot/1.0 (+https://github.com/ChenHom/line-stock-bot)'
+}
+
 export async function getNewsYahooRss(keyword: string, limit = 5): Promise<NewsItem[]> {
-  const q = `https://news.yahoo.com/rss/search?p=${encodeURIComponent(keyword)}&lang=zh-Hant-TW&region=TW`
-  const r = await fetch(q, { cache: 'no-store' })
-  if (!r.ok) throw new Error(`Yahoo RSS http ${r.status}`)
-  const xml = await r.text()
-  const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, limit)
-  const newsItems = items.map(m => {
-    const b = m[1]
-    const title = (b.match(/<title>(.*?)<\/title>/)?.[1] || '').trim()
-    const link = (b.match(/<link>(.*?)<\/link>/)?.[1] || '').trim()
-    const pub = (b.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '').trim()
-    const publishedAt = pub ? new Date(pub).toISOString() : undefined
-    return { title, url: link, source: 'Yahoo', publishedAt }
+  const response = await fetch(
+    `https://news.yahoo.com/rss/search?p=${encodeURIComponent(keyword)}&lang=zh-Hant-TW&region=TW`,
+    { cache: 'no-store', headers: REQUEST_HEADERS }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Yahoo RSS http ${response.status}`)
+  }
+
+  const xml = await response.text()
+  const blocks = extractItemBlocks(xml)
+  const newsItems = buildNewsList(blocks, 'yahoo-rss', limit, (block) => {
+    const url = normalizeUrl(extractTag(block, 'link'))
+    if (!url) {
+      return null
+    }
+
+    return {
+      title: sanitizeText(extractTag(block, 'title')) ?? '(無標題)',
+      url,
+      source: sanitizeText(extractTag(block, 'source')) ?? 'Yahoo 財經',
+      description: sanitizeText(extractTag(block, 'description')),
+      publishedAt: parsePublishedDate(extractTag(block, 'pubDate'))
+    }
   })
 
-  // Validate with Zod schema array
-  return z.array(NewsItemSchema).parse(newsItems)
+  if (!newsItems.length) {
+    throw new Error('Yahoo RSS returned no valid news items')
+  }
+
+  return newsItems
 }

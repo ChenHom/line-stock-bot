@@ -1,27 +1,47 @@
-import { NewsItem, NewsItemSchema } from '../../schemas'
-import { z } from 'zod'
+import { NewsItem } from '../../schemas'
+import { buildNewsList, extractItemBlocks, extractTag, normalizeUrl, parsePublishedDate, sanitizeText } from './rssUtils'
+
+const REQUEST_HEADERS = {
+  'User-Agent': 'line-stock-bot/1.0 (+https://github.com/ChenHom/line-stock-bot)'
+}
 
 export async function getNewsGoogleRss(keyword: string, limit = 5): Promise<NewsItem[]> {
-  const base = 'https://news.google.com/rss/search'
-  const q = `?q=${encodeURIComponent(keyword)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`
-  const url = base + q
-  const r = await fetch(url, { cache: 'no-store' })
-  if (!r.ok) throw new Error(`Google RSS http ${r.status}`)
-  const xml = await r.text()
-
-  // 非嚴格 XML 解析，取常見項目
-  const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, limit)
-  const newsItems = items.map(m => {
-    const block = m[1]
-    const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] ||
-                   block.match(/<title>(.*?)<\/title>/)?.[1] || '').trim()
-    const link = (block.match(/<link>(.*?)<\/link>/)?.[1] || '').trim()
-    const source = (block.match(/<source.*?>(.*?)<\/source>/)?.[1] || '').trim()
-    const pub = (block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '').trim()
-    const publishedAt = pub ? new Date(pub).toISOString() : undefined
-    return { title, url: link, source, publishedAt }
+  const params = new URLSearchParams({
+    q: keyword,
+    hl: 'zh-TW',
+    gl: 'TW',
+    ceid: 'TW:zh-Hant'
   })
 
-  // Validate with Zod schema array
-  return z.array(NewsItemSchema).parse(newsItems)
+  const response = await fetch(`https://news.google.com/rss/search?${params.toString()}`, {
+    cache: 'no-store',
+    headers: REQUEST_HEADERS
+  })
+
+  if (!response.ok) {
+    throw new Error(`Google RSS http ${response.status}`)
+  }
+
+  const xml = await response.text()
+  const blocks = extractItemBlocks(xml)
+  const newsItems = buildNewsList(blocks, 'google-rss', limit, (block) => {
+    const url = normalizeUrl(extractTag(block, 'link'))
+    if (!url) {
+      return null
+    }
+
+    return {
+      title: sanitizeText(extractTag(block, 'title')) ?? '(無標題)',
+      url,
+      source: sanitizeText(extractTag(block, 'source')),
+      description: sanitizeText(extractTag(block, 'description')),
+      publishedAt: parsePublishedDate(extractTag(block, 'pubDate'))
+    }
+  })
+
+  if (!newsItems.length) {
+    throw new Error('Google RSS returned no valid news items')
+  }
+
+  return newsItems
 }

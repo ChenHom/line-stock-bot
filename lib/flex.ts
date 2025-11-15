@@ -106,46 +106,26 @@ function buildUpdateRow(updatedAt: string, isStale?: boolean) {
   }
 }
 
-export function buildNewsFlexFromItems(keyword: string, items: NewsItem[]) {
+export function createNewsListMessage(keyword: string, items: NewsItem[], options?: { isStale?: boolean }) {
   if (!Array.isArray(items) || items.length === 0) {
-    // 空清單時給單卡提示，避免 messages 為空
-    return {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          { type: 'text', text: `找不到相關新聞：${keyword}`, weight: 'bold', size: 'md', wrap: true },
-          { type: 'text', text: '請換個關鍵字再試試。', size: 'sm', color: '#666' }
-        ]
-      }
-    }
+    return buildStatusFlex('找不到相關新聞', `關鍵字：${keyword}`, 'info')
   }
 
-  const bubbles = items.slice(0, 5).map((n) => ({
-    type: 'bubble',
-    size: 'kilo',
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'sm',
-      contents: [
-        { type: 'text', text: n.title || '(無標題)', wrap: true, weight: 'bold', size: 'sm' },
-        { type: 'text', text: `${n.source ?? ''}${n.source && n.publishedAt ? '・' : ''}${n.publishedAt ? new Date(n.publishedAt).toLocaleString('zh-TW', { hour12: false }) : ''}`, size: 'xs', color: '#888888', wrap: true }
-      ]
-    },
-    footer: {
-      type: 'box',
-      layout: 'vertical',
-      contents: [
-        n.url
-          ? { type: 'button', style: 'link', action: { type: 'uri', label: '閱讀全文', uri: n.url } }
-          : { type: 'button', style: 'secondary', action: { type: 'message', label: '更多新聞', text: `新聞 ${keyword}` } }
-      ]
-    }
-  }))
+  const bubbles = items.slice(0, 5).map((item) => createNewsBubble(keyword, item))
+
+  if (options?.isStale) {
+    bubbles.unshift(createStaleNoticeBubble(keyword))
+  }
+
+  if (bubbles.length === 1) {
+    return bubbles[0]
+  }
 
   return { type: 'carousel', contents: bubbles }
+}
+
+export function buildNewsFlexFromItems(keyword: string, items: NewsItem[], options?: { isStale?: boolean }) {
+  return createNewsListMessage(keyword, items, options)
 }
 
 /**
@@ -173,4 +153,68 @@ export function buildStatusFlex(title: string, message: string, type: 'info' | '
       ]
     }
   }
+}
+
+function createNewsBubble(keyword: string, news: NewsItem) {
+  const metaParts: string[] = []
+  if (news.source) {
+    metaParts.push(news.source)
+  }
+  if (news.publishedAt) {
+    metaParts.push(new Date(news.publishedAt).toLocaleString('zh-TW', { hour12: false }))
+  }
+
+  const metaLine = metaParts.join(' ・ ')
+  const snippet = news.description ? truncateText(news.description, 120) : undefined
+  const bodyContents: any[] = [
+    { type: 'text', text: news.title || '(無標題)', wrap: true, weight: 'bold', size: 'sm' }
+  ]
+
+  if (metaLine) {
+    bodyContents.push({ type: 'text', text: metaLine, size: 'xs', color: '#888888', wrap: true })
+  }
+
+  if (snippet) {
+    bodyContents.push({ type: 'text', text: snippet, size: 'xs', color: '#666666', wrap: true })
+  }
+
+  return {
+    type: 'bubble' as const,
+    size: 'kilo' as const,
+    body: {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      spacing: 'sm' as const,
+      contents: bodyContents
+    },
+    footer: {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      contents: [
+        news.url
+          ? { type: 'button', style: 'link' as const, action: { type: 'uri', label: '閱讀全文', uri: news.url } }
+          : { type: 'button', style: 'secondary' as const, action: { type: 'message', label: '更多新聞', text: `新聞 ${keyword}` } }
+      ]
+    }
+  }
+}
+
+function createStaleNoticeBubble(keyword: string) {
+  return {
+    type: 'bubble' as const,
+    body: {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      spacing: 'sm' as const,
+      contents: [
+        { type: 'text', text: `新聞 ${keyword}`, size: 'sm', weight: 'bold', color: '#F57C00', wrap: true },
+        { type: 'text', text: '資料可能稍有延遲', size: 'xs', color: '#F57C00' }
+      ]
+    }
+  }
+}
+
+function truncateText(value: string, length: number): string {
+  if (value.length <= length) return value
+  return `${value.slice(0, length - 1)}…`
 }

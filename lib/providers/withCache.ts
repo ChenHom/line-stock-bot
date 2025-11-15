@@ -140,7 +140,8 @@ export function generateQuoteCacheKey(symbol: string): string {
 }
 
 export function generateNewsCacheKey(keyword: string, limit: number = 5): string {
+  const normalized = keyword.trim().toLowerCase() || 'general'
   const now = Date.now()
   const bucket = Math.floor(now / (15 * 60 * 1000))
-  return `news:${keyword}:${limit}:${bucket}`
+  return `news:${normalized}:${limit}:${bucket}`
 }

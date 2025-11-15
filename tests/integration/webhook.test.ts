@@ -258,6 +258,17 @@ describe('Webhook Integration Tests', () => {
       expect(body.messages[0].altText).toContain('新聞 半導體')
     })
 
+    it('should prompt for more specific keyword when news keyword is too broad', async () => {
+      await sendCommand('新聞 股票')
+
+      // Only LINE reply API should be called
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const replyCall = mockFetch.mock.calls[0]
+      const body = JSON.parse(replyCall[1].body)
+      expect(body.messages[0].altText).toBe('請輸入更具體的關鍵字')
+      expect(body.messages[0].contents.type).toBe('bubble')
+    })
+
     it('should handle unknown command and reply with status Flex', async () => {
       await sendCommand('unknown-command')
 

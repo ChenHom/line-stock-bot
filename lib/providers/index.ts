@@ -42,24 +42,14 @@ const NEWS_PROVIDER_ALIASES: Record<string, NewsProviderName> = {
   'yahoo-rss': 'yahoo-rss'
 }
 
-const getNewsGoogleCached = withCache(getNewsGoogleRss, {
-  keyFn: (keyword: string, limit: number = 5) => generateNewsCacheKey(keyword, limit),
-  ttl: 900
-})
-
-const getNewsYahooCached = withCache(getNewsYahooRss, {
-  keyFn: (keyword: string, limit: number = 5) => generateNewsCacheKey(keyword, limit),
-  ttl: 900
-})
-
 const quoteProviders: QuoteProviderConfig[] = [
   { name: 'twse', fetcher: getQuoteTwse },
   { name: 'yahoo-rapid', fetcher: getQuoteYahoo }
 ]
 
 const newsProviders: NewsProviderConfig[] = [
-  { name: 'google-rss', fetcher: getNewsGoogleCached },
-  { name: 'yahoo-rss', fetcher: getNewsYahooCached }
+  { name: 'google-rss', fetcher: getNewsGoogleRss },
+  { name: 'yahoo-rss', fetcher: getNewsYahooRss }
 ]
 
 const fetchQuoteWithFallback = async (symbol: string, options?: ProviderOptions): Promise<Quote> => {
@@ -78,18 +68,24 @@ export const getQuoteWithFallback = withCache(fetchQuoteWithFallback, {
   ttl: 45
 })
 
-/**
- * Retrieve industry news with sequential fallback and timeout protection.
- * Primary provider is configurable via NEWS_PRIMARY_PROVIDER env var.
- */
-export async function getIndustryNews(keyword: string, limit = 5, options?: ProviderOptions): Promise<NewsItem[]> {
+const fetchNewsWithFallback = async (keyword: string, limit = 5, options?: ProviderOptions): Promise<NewsItem[]> => {
   const providerOrder = orderNewsProviders(process.env.NEWS_PRIMARY_PROVIDER)
-  return executeWithFallback<NewsItem[], NewsProviderConfig>(providerOrder, options, {
-    keyword,
-    limit,
-    requestId: options?.requestId
-  }, (provider) => provider.fetcher(keyword, limit))
+  return executeWithFallback<NewsItem[], NewsProviderConfig>(
+    providerOrder,
+    options,
+    { keyword, limit, requestId: options?.requestId },
+    (provider) => provider.fetcher(keyword, limit)
+  )
 }
+
+/**
+ * Retrieve industry news with sequential fallback, cached for 15 minutes with stale support.
+ */
+export const getIndustryNews = withCache(fetchNewsWithFallback, {
+  keyFn: (keyword: string, limit: number = 5) => generateNewsCacheKey(keyword, limit),
+  ttl: 900,
+  staleWhileRevalidateTtl: 900
+})
 
 function orderQuoteProviders(preferred?: string): QuoteProviderConfig[] {
   return orderProviders(quoteProviders, preferred ? QUOTE_PROVIDER_ALIASES[preferred.toLowerCase()] : undefined)

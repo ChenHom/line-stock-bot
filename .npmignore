@@ -1,0 +1,33 @@
+# Node.js build artifacts
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+
+# TypeScript metadata
+*.tsbuildinfo
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Local tooling
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+npm-debug.log*
+yarn-*.log*
+pnpm-debug.log*
+*.tmp
+.cache/
+.DS_Store
+Thumbs.db
+
+# Repository-specific directories
+.specify/
+.vercel/

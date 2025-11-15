@@ -118,7 +118,7 @@ describe('News Providers', () => {
       expect(result).toBeDefined()
       expect(result[0].title).toBe('Yahoo News Title')
       expect(result[0].url).toBe('https://yahoo.com/news/1')
-      expect(result[0].source).toBe('Yahoo')
+      expect(result[0].source).toBe('Yahoo 財經')
     })
 
     it('should throw error when Yahoo RSS API fails', async () => {

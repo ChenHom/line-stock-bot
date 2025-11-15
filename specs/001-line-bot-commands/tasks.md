@@ -115,13 +115,13 @@ description: "Task list for implementing LINE bot commands and required infra ad
 
 ### Tasks
 
-- [ ] T019 [P] [US2] Create lib/providers/news/googleRss.ts implementing Google News RSS provider with Zod validation
-- [ ] T020 [P] [US2] Create lib/providers/news/yahooRss.ts implementing Yahoo RSS provider with Zod validation
-- [ ] T021 [US2] Implement getIndustryNews in lib/providers/index.ts with fallback logic and limit parameter
-- [ ] T022 [US2] Integrate news providers with withCache wrapper (900s / 15min TTL) in lib/providers/index.ts
-- [ ] T023 [P] [US2] Create Flex Message template for news list display in lib/flex.ts (createNewsListMessage)
-- [ ] T024 [US2] Implement news query command handler in api/line/webhook.ts (parse「新聞」command, fetch news, reply with Flex Message)
-- [ ] T025 [US2] Add handling for overly broad keywords with suggestion message in api/line/webhook.ts
+- [X] T019 [P] [US2] Create lib/providers/news/googleRss.ts implementing Google News RSS provider with Zod validation
+- [X] T020 [P] [US2] Create lib/providers/news/yahooRss.ts implementing Yahoo RSS provider with Zod validation
+- [X] T021 [US2] Implement getIndustryNews in lib/providers/index.ts with fallback logic and limit parameter
+- [X] T022 [US2] Integrate news providers with withCache wrapper (900s / 15min TTL) in lib/providers/index.ts
+- [X] T023 [P] [US2] Create Flex Message template for news list display in lib/flex.ts (createNewsListMessage)
+- [X] T024 [US2] Implement news query command handler in api/line/webhook.ts (parse「新聞」command, fetch news, reply with Flex Message)
+- [X] T025 [US2] Add handling for overly broad keywords with suggestion message in api/line/webhook.ts
 
 **Dependencies**: Requires Phase 1-2 completion. Can be developed in parallel with Phase 3.
 

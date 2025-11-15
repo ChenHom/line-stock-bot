@@ -193,7 +193,7 @@ describe('Provider Fallback Logic', () => {
       const result = await getIndustryNews('tech', 5)
 
       expect(result).toBeDefined()
-      expect(result[0].source).toBe('Yahoo')
+      expect(result[0].source).toBe('Yahoo 財經')
       expect(global.fetch).toHaveBeenCalledTimes(2)
     })
   })
