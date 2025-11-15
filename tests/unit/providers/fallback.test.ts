@@ -12,8 +12,17 @@ describe('Provider Fallback Logic', () => {
   describe('getQuoteWithFallback', () => {
     it('should use TWSE as primary provider by default', async () => {
       const mockTwseResponse = {
-        stat: 'OK',
-        data: [['113/11/01', '1000', '500000', '100.00', '102.00', '99.00', '101.00', '+1.00', '1000']]
+        msgArray: [{
+          c: '2330',
+          n: '台積電',
+          z: '101.00',
+          y: '100.00',
+          o: '100.00',
+          h: '102.00',
+          l: '99.00',
+          t: '13:30:00',
+          d: '2023/11/01'
+        }]
       }
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -26,7 +35,7 @@ describe('Provider Fallback Logic', () => {
       expect(result).toBeDefined()
       expect(result.symbol).toBe('2330')
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('twse.com.tw'),
+        expect.stringContaining('mis.twse.com.tw'),
         expect.any(Object)
       )
     })
@@ -104,8 +113,17 @@ describe('Provider Fallback Logic', () => {
       process.env.QUOTE_PRIMARY_PROVIDER = 'yahoo'
 
       const mockTwseResponse = {
-        stat: 'OK',
-        data: [['113/11/01', '1000', '500000', '100.00', '102.00', '99.00', '101.00', '+1.00', '1000']]
+        msgArray: [{
+          c: '2330',
+          n: '台積電',
+          z: '101.00',
+          y: '100.00',
+          o: '100.00',
+          h: '102.00',
+          l: '99.00',
+          t: '13:30:00',
+          d: '2023/11/01'
+        }]
       }
 
       let callCount = 0

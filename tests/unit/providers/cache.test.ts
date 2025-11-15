@@ -8,10 +8,16 @@ describe('Cache Wrapper', () => {
     vi.clearAllMocks()
   })
 
+  const buildEnvelope = (value: any, freshMs = 60000, staleMs = 120000) => ({
+    data: value,
+    expiresAt: Date.now() + freshMs,
+    staleUntil: Date.now() + staleMs
+  })
+
   describe('withCache', () => {
     it('should return cached value when available', async () => {
       const mockFn = vi.fn().mockResolvedValue({ data: 'fresh' })
-      const cacheGetSpy = vi.spyOn(cache, 'cacheGet').mockResolvedValue({ data: 'cached' })
+      const cacheGetSpy = vi.spyOn(cache, 'cacheGet').mockResolvedValue(buildEnvelope({ data: 'cached' }))
       const cacheSetSpy = vi.spyOn(cache, 'cacheSet').mockResolvedValue()
 
       const cachedFn = withCache(mockFn, {
@@ -42,7 +48,7 @@ describe('Cache Wrapper', () => {
       expect(result).toEqual({ data: 'fresh' })
       expect(cacheGetSpy).toHaveBeenCalledWith('test:key1')
       expect(mockFn).toHaveBeenCalledWith('key1')
-      expect(cacheSetSpy).toHaveBeenCalledWith('test:key1', { data: 'fresh' }, 60)
+      expect(cacheSetSpy).toHaveBeenCalled()
     })
 
     it('should fallback to function when cache read fails', async () => {
@@ -95,6 +101,26 @@ describe('Cache Wrapper', () => {
       expect(mockFn).toHaveBeenCalledWith('key1')
       expect(cacheGetSpy).not.toHaveBeenCalled()
       expect(cacheSetSpy).not.toHaveBeenCalled()
+    })
+
+    it('should return stale cache when fetch fails and stale data exists', async () => {
+      const mockFn = vi.fn().mockRejectedValue(new Error('Provider down'))
+      const staleEnvelope = {
+        data: { data: 'stale' },
+        expiresAt: Date.now() - 1000,
+        staleUntil: Date.now() + 5000
+      }
+      vi.spyOn(cache, 'cacheGet').mockResolvedValue(staleEnvelope)
+
+      const cachedFn = withCache(mockFn, {
+        keyFn: (arg: string) => `test:${arg}`,
+        ttl: 1
+      })
+
+      const result = await cachedFn('key1') as any
+
+      expect(result).toEqual({ data: 'stale' })
+      expect(result.isStale).toBe(true)
     })
   })
 

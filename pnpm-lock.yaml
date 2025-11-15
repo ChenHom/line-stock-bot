@@ -11,6 +11,9 @@ importers:
       '@upstash/redis':
         specifier: ^1.35.6
         version: 1.35.6
+      fuse.js:
+        specifier: ^7.1.0
+        version: 7.1.0
       vercel:
         specifier: ^48.9.0
         version: 48.9.0(rollup@4.53.2)(typescript@5.9.3)
@@ -1240,6 +1243,10 @@ packages:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
+
+  fuse.js@7.1.0:
+    resolution: {integrity: sha512-trLf4SzuuUxfusZADLINj+dE8clK1frKdmqiJNb1Es75fmI5oY6X2mxLVUciLLjxqw/xr72Dhy+lER6dGd02FQ==}
+    engines: {node: '>=10'}
 
   generic-pool@3.4.2:
     resolution: {integrity: sha512-H7cUpwCQSiJmAHM4c/aFu6fUfrhWXW1ncyh8ftxEPMu6AiYkHw9K8br720TGPZJbk5eOH2bynjZD1yPvdDAmag==}
@@ -3158,6 +3165,8 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  fuse.js@7.1.0: {}
 
   generic-pool@3.4.2: {}
 

@@ -198,7 +198,7 @@ describe('Webhook Integration Tests', () => {
       // First call is to TWSE API
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('twse.com.tw'),
+        expect.stringContaining('mis.twse.com.tw'),
         expect.any(Object)
       )
 

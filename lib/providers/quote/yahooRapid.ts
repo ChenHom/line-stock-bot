@@ -1,36 +1,61 @@
 import { toMarketSymbol } from '../../symbol'
 import { Quote, QuoteSchema } from '../../schemas'
 
-const Y_URL = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols='
+const YAHOO_ENDPOINT = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols='
 
+interface YahooQuoteResponse {
+  quoteResponse?: {
+    result?: Array<Record<string, any>>
+    error?: unknown
+  }
+}
+
+/**
+ * Yahoo Finance provider (Rapid API compatible endpoint).
+ */
 export async function getQuoteYahoo(rawSymbol: string): Promise<Quote> {
   const marketSymbol = toMarketSymbol(rawSymbol)
-  const r = await fetch(Y_URL + encodeURIComponent(marketSymbol), { cache: 'no-store' })
-  if (!r.ok) throw new Error(`Yahoo quote http ${r.status}`)
-  const j: any = await r.json()
-  const q = j?.quoteResponse?.result?.[0]
-  if (!q) throw new Error('Yahoo quote empty')
+  const response = await fetch(YAHOO_ENDPOINT + encodeURIComponent(marketSymbol), { cache: 'no-store' })
+  if (!response.ok) {
+    throw new Error(`Yahoo quote http ${response.status}`)
+  }
 
-  const price = Number(q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice ?? NaN)
-  const change = Number(q.regularMarketChange ?? 0)
-  const changePercent = Number(q.regularMarketChangePercent ?? 0)
+  const payload = (await response.json()) as YahooQuoteResponse
+  const quoteData = payload?.quoteResponse?.result?.[0]
+  if (!quoteData) {
+    throw new Error('Yahoo quote empty')
+  }
+
+  const price = chooseNumber(quoteData.regularMarketPrice, quoteData.postMarketPrice, quoteData.preMarketPrice)
+  const change = chooseNumber(quoteData.regularMarketChange)
+  const changePercent = chooseNumber(quoteData.regularMarketChangePercent)
 
   const quote = {
-    symbol: rawSymbol,
+    symbol: rawSymbol.trim(),
     marketSymbol,
-    name: q.longName || q.shortName,
+    name: quoteData.longName || quoteData.shortName,
     price,
     change,
     changePercent,
-    open: Number(q.regularMarketOpen ?? NaN),
-    high: Number(q.regularMarketDayHigh ?? NaN),
-    low: Number(q.regularMarketDayLow ?? NaN),
-    prevClose: Number(q.regularMarketPreviousClose ?? NaN),
-    currency: q.currency,
-    marketTime: q.regularMarketTime ? new Date(q.regularMarketTime * 1000).toISOString() : undefined,
+    open: chooseNumber(quoteData.regularMarketOpen),
+    high: chooseNumber(quoteData.regularMarketDayHigh),
+    low: chooseNumber(quoteData.regularMarketDayLow),
+    prevClose: chooseNumber(quoteData.regularMarketPreviousClose),
+    currency: quoteData.currency || 'TWD',
+    marketTime: quoteData.regularMarketTime ? new Date(quoteData.regularMarketTime * 1000).toISOString() : undefined,
     delayed: true
   }
 
-  // Validate with Zod schema
   return QuoteSchema.parse(quote)
+}
+
+function chooseNumber(...candidates: Array<number | string | undefined>): number | undefined {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue
+    const parsed = Number(candidate)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+  return undefined
 }

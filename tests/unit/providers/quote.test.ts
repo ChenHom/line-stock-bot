@@ -1,6 +1,6 @@
 // tests/unit/providers/quote.test.ts
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { getQuoteTwseDaily } from '../../../lib/providers/quote/twse'
+import { getQuoteTwse } from '../../../lib/providers/quote/twse'
 import { getQuoteYahoo } from '../../../lib/providers/quote/yahooRapid'
 
 describe('Quote Providers', () => {
@@ -12,14 +12,20 @@ describe('Quote Providers', () => {
     vi.restoreAllMocks()
   })
 
-  describe('getQuoteTwseDaily', () => {
+  describe('getQuoteTwse', () => {
     it('should fetch and parse TWSE data successfully', async () => {
-      // Mock fetch for TWSE API
       const mockResponse = {
-        stat: 'OK',
-        data: [
-          ['113/11/01', '1000', '500000', '100.00', '102.00', '99.00', '101.00', '+1.00', '1000']
-        ]
+        msgArray: [{
+          c: '2330',
+          n: '台積電',
+          z: '101.00',
+          y: '100.00',
+          o: '100.00',
+          h: '102.00',
+          l: '99.00',
+          t: '13:30:00',
+          d: '2023/11/01'
+        }]
       }
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -27,7 +33,7 @@ describe('Quote Providers', () => {
         json: async () => mockResponse
       } as Response)
 
-      const result = await getQuoteTwseDaily('2330')
+      const result = await getQuoteTwse('2330')
 
       expect(result).toBeDefined()
       expect(result.symbol).toBe('2330')
@@ -44,10 +50,10 @@ describe('Quote Providers', () => {
     it('should throw error when TWSE API returns empty data', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ stat: 'OK', data: [] })
+        json: async () => ({ msgArray: [] })
       } as Response)
 
-      await expect(getQuoteTwseDaily('9999')).rejects.toThrow('TWSE empty')
+      await expect(getQuoteTwse('9999')).rejects.toThrow('TWSE empty payload')
     })
 
     it('should throw error when TWSE API fails', async () => {
@@ -56,15 +62,17 @@ describe('Quote Providers', () => {
         status: 500
       } as Response)
 
-      await expect(getQuoteTwseDaily('2330')).rejects.toThrow('TWSE http 500')
+      await expect(getQuoteTwse('2330')).rejects.toThrow('TWSE http 500')
     })
 
     it('should validate response with Zod schema and reject invalid data', async () => {
       const invalidResponse = {
-        stat: 'OK',
-        data: [
-          ['113/11/01', '1000', '500000', 'invalid', '102.00', '99.00', '101.00', '+1.00', '1000']
-        ]
+        msgArray: [{
+          c: '2330',
+          n: '台積電',
+          z: '---',
+          y: '100.00'
+        }]
       }
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -72,8 +80,7 @@ describe('Quote Providers', () => {
         json: async () => invalidResponse
       } as Response)
 
-      // Should throw Zod validation error for NaN price
-      await expect(getQuoteTwseDaily('2330')).rejects.toThrow()
+      await expect(getQuoteTwse('2330')).rejects.toThrow()
     })
   })
 

@@ -1,73 +1,108 @@
-import {Quote, NewsItem} from './types'
+import { Quote, NewsItem } from './types'
 
-// 公用格式器
 const fmt = {
-  n: (x: number | undefined) => (x ? (isFinite(x) ? x.toFixed(2) : '-') : '-'),
-  pct: (x: number) => (isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}%` : '-'),
-  chg: (x: number) => (isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}` : '-'),
-  time: (x: string | undefined) => (x ? new Date(x) : new Date()).toLocaleString('zh-TW', { hour12: false }),
-  trend: (x: number) => (x >= 0 ? { arrow: '▲', color: '#D32F2F' } : { arrow: '▼', color: '#1976D2' })
+  n: (x: number | undefined) => (typeof x === 'number' && Number.isFinite(x) ? x.toFixed(2) : '-'),
+  pct: (x: number | undefined) =>
+    typeof x === 'number' && Number.isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}%` : '-',
+  chg: (x: number | undefined) =>
+    typeof x === 'number' && Number.isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}` : '-',
+  time: (x: string | undefined) =>
+    (x ? new Date(x) : new Date()).toLocaleString('zh-TW', { hour12: false }),
+  trend: (x: number | undefined) =>
+    (typeof x === 'number' && x < 0)
+      ? { arrow: '▼', color: '#1976D2' }
+      : { arrow: '▲', color: '#D32F2F' }
 }
 
-export function buildPriceFlexFromData(q: Quote) {
-  const t = fmt.trend(q.change)
-  return {
-    type: 'bubble',
+export function createStockQuoteMessage(quote: Quote, options?: { isStale?: boolean }) {
+  const { isStale } = options || {}
+  const trend = fmt.trend(quote.change)
+
+  const headerLine = `${quote.name ?? '股票'}（${quote.symbol}）`
+  const updatedAt = fmt.time(quote.marketTime)
+  const canvas = {
+    type: 'bubble' as const,
     size: 'mega',
     body: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'md',
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      spacing: 'md' as const,
       contents: [
-        { type: 'text', text: `${q.name ?? ''}（${q.symbol}）`, weight: 'bold', size: 'md', wrap: true },
-        { type: 'text', text: fmt.n(q.price), weight: 'bold', size: '3xl', color: t.color },
-        { type: 'text', text: `${t.arrow} ${fmt.chg(q.change)}（${fmt.pct(q.changePercent)}）`, size: 'sm', color: t.color },
-        {
-          type: 'box',
-          layout: 'vertical',
-          margin: 'md',
-          backgroundColor: '#F7F7F7',
-          cornerRadius: 'lg',
-          paddingAll: '10px',
-          contents: [
-            {
-              type: 'box', layout: 'horizontal', contents: [
-                { type: 'text', text: '今開', size: 'sm', color: '#666', flex: 2 },
-                { type: 'text', text: fmt.n(q.open), size: 'sm', color: '#111', align: 'end', flex: 3 }
-              ]
-            },
-            {
-              type: 'box', layout: 'horizontal', contents: [
-                { type: 'text', text: '昨收', size: 'sm', color: '#666', flex: 2 },
-                { type: 'text', text: fmt.n(q.prevClose), size: 'sm', color: '#111', align: 'end', flex: 3 }
-              ]
-            },
-            {
-              type: 'box', layout: 'horizontal', contents: [
-                { type: 'text', text: '最高', size: 'sm', color: '#666', flex: 2 },
-                { type: 'text', text: fmt.n(q.high), size: 'sm', color: '#111', align: 'end', flex: 3 }
-              ]
-            },
-            {
-              type: 'box', layout: 'horizontal', contents: [
-                { type: 'text', text: '最低', size: 'sm', color: '#666', flex: 2 },
-                { type: 'text', text: fmt.n(q.low), size: 'sm', color: '#111', align: 'end', flex: 3 }
-              ]
-            }
-          ]
-        },
-        { type: 'text', text: `更新：${fmt.time(q.marketTime)}`, size: 'xs', color: '#999' }
+        { type: 'text', text: headerLine, weight: 'bold', size: 'md', wrap: true },
+        { type: 'text', text: fmt.n(quote.price), weight: 'bold', size: '3xl', color: trend.color },
+        { type: 'text', text: `${trend.arrow} ${fmt.chg(quote.change)}（${fmt.pct(quote.changePercent)}）`, size: 'sm', color: trend.color },
+        buildQuoteStatBox(quote),
+        buildUpdateRow(updatedAt, isStale)
       ]
     },
     footer: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'sm',
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      spacing: 'sm' as const,
       contents: [
-        { type: 'button', style: 'primary', color: '#2E7D32', action: { type: 'message', label: '查看新聞', text: `新聞 ${q.symbol}` } },
-        { type: 'button', style: 'secondary', action: { type: 'message', label: '加入自選', text: `+自選 ${q.symbol}` } }
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#2E7D32',
+          action: { type: 'message', label: '查看新聞', text: `新聞 ${quote.symbol}` }
+        }
       ]
     }
+  }
+
+  return canvas
+}
+
+// Backward-compatible helper used by existing webhook handler
+export function buildPriceFlexFromData(quote: Quote, options?: { isStale?: boolean }) {
+  return createStockQuoteMessage(quote, options)
+}
+
+function buildQuoteStatBox(quote: Quote) {
+  const rows = [
+    ['今開', fmt.n(quote.open)],
+    ['昨收', fmt.n(quote.prevClose)],
+    ['最高', fmt.n(quote.high)],
+    ['最低', fmt.n(quote.low)]
+  ]
+
+  return {
+    type: 'box' as const,
+    layout: 'vertical' as const,
+    margin: 'md' as const,
+    backgroundColor: '#F7F7F7',
+    cornerRadius: 'lg',
+    paddingAll: '10px',
+    contents: rows.map(([label, value]) => ({
+      type: 'box',
+      layout: 'horizontal',
+      contents: [
+        { type: 'text', text: label, size: 'sm', color: '#666666', flex: 2 },
+        { type: 'text', text: value, size: 'sm', color: '#111111', align: 'end', flex: 3 }
+      ]
+    }))
+  }
+}
+
+function buildUpdateRow(updatedAt: string, isStale?: boolean) {
+  const contents: any[] = [
+    { type: 'text', text: `更新：${updatedAt}`, size: 'xs', color: '#999999' }
+  ]
+
+  if (isStale) {
+    contents.push({
+      type: 'text',
+      text: '資料可能稍有延遲',
+      size: 'xs',
+      color: '#F57C00'
+    })
+  }
+
+  return {
+    type: 'box' as const,
+    layout: 'vertical' as const,
+    spacing: 'xs' as const,
+    contents
   }
 }
 

@@ -1,8 +1,8 @@
 // api/line/webhook.ts
 import { getQuoteWithFallback, getIndustryNews } from '../../lib/providers'
-import { buildPriceFlexFromData, buildNewsFlexFromItems, buildStatusFlex } from '../../lib/flex'
+import { createStockQuoteMessage, buildNewsFlexFromItems, buildStatusFlex } from '../../lib/flex'
 import { logger } from '../../lib/logger'
-import { resolveSymbol } from '../../lib/symbol'
+import { fuzzyMatchSymbol } from '../../lib/symbol'
 
 import type { IncomingMessage, ServerResponse } from 'http'
 import crypto from 'node:crypto'
@@ -90,6 +90,8 @@ function buildHelpFlex() {
 }
 
 /* ---------- main handler ---------- */
+const STOCK_CODE_REGEX = /^\d{4}$/
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   logger.webhookRequest(req.method || 'UNKNOWN', req.url || '/api/line/webhook')
 
@@ -133,10 +135,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         if (cmd === 'help' || cmd === '/help' || cmd === '？' || cmd === '幫助') {
           await replyFlex(ev.replyToken, '可用指令', buildHelpFlex())
         } else if (cmd === '股價' || cmd === 'price') {
-          const resolvedSymbol = resolveSymbol(args || '2330')
-          const quote = await getQuoteWithFallback(resolvedSymbol)
-          const flex = buildPriceFlexFromData(quote)
-          await replyFlex(ev.replyToken, `股價 ${quote.symbol}`, flex)
+          await handleStockQuoteCommand(ev.replyToken, args)
         } else if (cmd === '新聞' || cmd === 'news') {
           const items = await getIndustryNews(args || '半導體', 5)
           const flex = buildNewsFlexFromItems(args || '半導體', items)
@@ -164,4 +163,51 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   res.statusCode = 200
   res.setHeader('Content-Type', 'application/json')
   res.end(JSON.stringify({ ok: true }))
+}
+
+async function handleStockQuoteCommand(replyToken: string, rawArgs: string) {
+  const query = (rawArgs || '').trim()
+
+  if (!query) {
+    await replyFlex(replyToken, '缺少股票代號', buildStatusFlex('請輸入股票代號', '請輸入「股價 <代號或名稱>」再試一次。', 'info'))
+    return
+  }
+
+  if (/^\d+$/.test(query) && !STOCK_CODE_REGEX.test(query)) {
+    await replyFlex(replyToken, '無效股票代號', buildStatusFlex('查無此股票代號', '請輸入 4 位數股票代號，例如「股價 2330」。', 'warning'))
+    return
+  }
+
+  let resolvedSymbol = query
+  let matchedName: string | undefined
+
+  if (!STOCK_CODE_REGEX.test(query)) {
+    const match = fuzzyMatchSymbol(query)
+    if (!match) {
+      await replyFlex(replyToken, '無法識別股票', buildStatusFlex('找不到明確的股票', '找到多筆相似結果，請使用更精確的名稱或股票代號。', 'warning'))
+      return
+    }
+    resolvedSymbol = match.symbol
+    matchedName = match.name
+  }
+
+  try {
+    const quote = await getQuoteWithFallback(resolvedSymbol)
+    if (matchedName && !quote.name) {
+      quote.name = matchedName
+    }
+    const flex = createStockQuoteMessage(quote, { isStale: Boolean((quote as any).isStale) })
+    await replyFlex(replyToken, `股價 ${quote.symbol}`, flex)
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      await replyFlex(replyToken, '查無此股票', buildStatusFlex('查無此股票代號', '請確認後再試。', 'warning'))
+      return
+    }
+    throw error
+  }
+}
+
+function isNotFoundError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /(empty|not\s*found|unknown\s*symbol|invalid\s*symbol)/i.test(message)
 }

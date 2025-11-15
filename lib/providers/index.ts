@@ -1,100 +1,178 @@
 import { Quote, NewsItem } from '../schemas'
+import { logger } from '../logger'
+import { metrics } from '../monitoring'
 import { getQuoteYahoo } from './quote/yahooRapid'
-import { getQuoteTwseDaily } from './quote/twse'
+import { getQuoteTwse } from './quote/twse'
 import { getNewsGoogleRss } from './news/googleRss'
 import { getNewsYahooRss } from './news/yahooRss'
 import { withCache, generateQuoteCacheKey, generateNewsCacheKey } from './withCache'
-import { logger } from '../logger'
-import { metrics } from '../monitoring'
 
-// Wrap providers with cache
-const getQuoteYahooCached = withCache(getQuoteYahoo, {
-  keyFn: generateQuoteCacheKey,
-  ttl: 45 // 45 seconds
-})
+type QuoteProviderName = 'twse' | 'yahoo-rapid'
+type NewsProviderName = 'google-rss' | 'yahoo-rss'
 
-const getQuoteTwseCached = withCache(getQuoteTwseDaily, {
-  keyFn: generateQuoteCacheKey,
-  ttl: 45 // 45 seconds
-})
+interface ProviderOptions {
+  requestId?: string
+  timeoutMs?: number
+}
+
+interface QuoteProviderConfig {
+  name: QuoteProviderName
+  fetcher: (symbol: string) => Promise<Quote>
+  timeoutMs?: number
+}
+
+interface NewsProviderConfig {
+  name: NewsProviderName
+  fetcher: (keyword: string, limit?: number) => Promise<NewsItem[]>
+  timeoutMs?: number
+}
+
+const DEFAULT_PROVIDER_TIMEOUT = getDefaultTimeout()
+
+const QUOTE_PROVIDER_ALIASES: Record<string, QuoteProviderName> = {
+  twse: 'twse',
+  yahoo: 'yahoo-rapid',
+  'yahoo-rapid': 'yahoo-rapid'
+}
+
+const NEWS_PROVIDER_ALIASES: Record<string, NewsProviderName> = {
+  google: 'google-rss',
+  'google-rss': 'google-rss',
+  yahoo: 'yahoo-rss',
+  'yahoo-rss': 'yahoo-rss'
+}
 
 const getNewsGoogleCached = withCache(getNewsGoogleRss, {
   keyFn: (keyword: string, limit: number = 5) => generateNewsCacheKey(keyword, limit),
-  ttl: 900 // 15 minutes
+  ttl: 900
 })
 
 const getNewsYahooCached = withCache(getNewsYahooRss, {
   keyFn: (keyword: string, limit: number = 5) => generateNewsCacheKey(keyword, limit),
-  ttl: 900 // 15 minutes
+  ttl: 900
 })
 
-/**
- * Get quote with automatic fallback based on configured provider priority
- * Default: TWSE primary, Yahoo fallback
- * Configurable via QUOTE_PRIMARY_PROVIDER env var (twse|yahoo)
- */
-export async function getQuoteWithFallback(symbol: string): Promise<Quote> {
-  const primaryProvider = (process.env.QUOTE_PRIMARY_PROVIDER || 'twse').toLowerCase()
+const quoteProviders: QuoteProviderConfig[] = [
+  { name: 'twse', fetcher: getQuoteTwse },
+  { name: 'yahoo-rapid', fetcher: getQuoteYahoo }
+]
 
-  if (primaryProvider === 'yahoo') {
-    // Yahoo primary, TWSE fallback
-    try {
-      const startTime = Date.now()
-      const result = await getQuoteYahooCached(symbol)
-      logger.providerSuccess('yahoo', Date.now() - startTime, { symbol })
-      metrics.recordProviderSuccess('yahoo')
-      return result
-    } catch (e) {
-      logger.providerFallback('yahoo', 'twse', e instanceof Error ? e.message : String(e))
-      metrics.recordProviderError('yahoo')
-      metrics.recordProviderFallback('yahoo', 'twse')
-      const startTime = Date.now()
-      const result = await getQuoteTwseCached(symbol)
-      logger.providerSuccess('twse', Date.now() - startTime, { symbol, fallback: true })
-      metrics.recordProviderSuccess('twse')
-      return result
-    }
-  } else {
-    // TWSE primary (default), Yahoo fallback
-    try {
-      const startTime = Date.now()
-      const result = await getQuoteTwseCached(symbol)
-      logger.providerSuccess('twse', Date.now() - startTime, { symbol })
-      metrics.recordProviderSuccess('twse')
-      return result
-    } catch (e) {
-      logger.providerFallback('twse', 'yahoo', e instanceof Error ? e.message : String(e))
-      metrics.recordProviderError('twse')
-      metrics.recordProviderFallback('twse', 'yahoo')
-      const startTime = Date.now()
-      const result = await getQuoteYahooCached(symbol)
-      logger.providerSuccess('yahoo', Date.now() - startTime, { symbol, fallback: true })
-      metrics.recordProviderSuccess('yahoo')
-      return result
-    }
-  }
+const newsProviders: NewsProviderConfig[] = [
+  { name: 'google-rss', fetcher: getNewsGoogleCached },
+  { name: 'yahoo-rss', fetcher: getNewsYahooCached }
+]
+
+const fetchQuoteWithFallback = async (symbol: string, options?: ProviderOptions): Promise<Quote> => {
+  const providerOrder = orderQuoteProviders(process.env.QUOTE_PRIMARY_PROVIDER)
+  return executeWithFallback<Quote, QuoteProviderConfig>(providerOrder, options, {
+    symbol,
+    requestId: options?.requestId
+  }, (provider) => provider.fetcher(symbol))
 }
 
 /**
- * Get industry news with automatic fallback
- * Google RSS primary, Yahoo RSS fallback
+ * Retrieve stock quote with sequential fallback, cached for 45 seconds.
  */
-export async function getIndustryNews(keyword: string, limit = 5): Promise<NewsItem[]> {
-  try {
-    const startTime = Date.now()
-    const result = await getNewsGoogleCached(keyword, limit)
-    logger.providerSuccess('google-rss', Date.now() - startTime, { keyword, limit })
-    metrics.recordProviderSuccess('google-rss')
-    return result
-  } catch (e) {
-    logger.providerFallback('google-rss', 'yahoo-rss', e instanceof Error ? e.message : String(e))
-    metrics.recordProviderError('google-rss')
-    metrics.recordProviderFallback('google-rss', 'yahoo-rss')
-    const startTime = Date.now()
-    const result = await getNewsYahooCached(keyword, limit)
-    logger.providerSuccess('yahoo-rss', Date.now() - startTime, { keyword, limit, fallback: true })
-    metrics.recordProviderSuccess('yahoo-rss')
-    return result
+export const getQuoteWithFallback = withCache(fetchQuoteWithFallback, {
+  keyFn: (symbol: string) => generateQuoteCacheKey(symbol),
+  ttl: 45
+})
+
+/**
+ * Retrieve industry news with sequential fallback and timeout protection.
+ * Primary provider is configurable via NEWS_PRIMARY_PROVIDER env var.
+ */
+export async function getIndustryNews(keyword: string, limit = 5, options?: ProviderOptions): Promise<NewsItem[]> {
+  const providerOrder = orderNewsProviders(process.env.NEWS_PRIMARY_PROVIDER)
+  return executeWithFallback<NewsItem[], NewsProviderConfig>(providerOrder, options, {
+    keyword,
+    limit,
+    requestId: options?.requestId
+  }, (provider) => provider.fetcher(keyword, limit))
+}
+
+function orderQuoteProviders(preferred?: string): QuoteProviderConfig[] {
+  return orderProviders(quoteProviders, preferred ? QUOTE_PROVIDER_ALIASES[preferred.toLowerCase()] : undefined)
+}
+
+function orderNewsProviders(preferred?: string): NewsProviderConfig[] {
+  return orderProviders(newsProviders, preferred ? NEWS_PROVIDER_ALIASES[preferred.toLowerCase()] : undefined)
+}
+
+function orderProviders<T extends { name: string }>(providers: T[], preferred?: string): T[] {
+  if (!preferred) return providers
+  const idx = providers.findIndex((p) => p.name === preferred)
+  if (idx <= 0) return providers
+  const reordered = providers.slice()
+  const [primary] = reordered.splice(idx, 1)
+  reordered.unshift(primary)
+  return reordered
+}
+
+async function executeWithFallback<T, P extends { name: string; timeoutMs?: number }>(
+  providers: P[],
+  options: ProviderOptions | undefined,
+  context: Record<string, any>,
+  runner: (provider: P) => Promise<T>
+): Promise<T> {
+  if (!providers.length) {
+    throw new Error('No providers configured')
   }
+
+  let lastError: unknown
+
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i]
+    const timeoutMs = options?.timeoutMs ?? provider.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT
+    const startTime = Date.now()
+
+    try {
+      const result = await withTimeout(runner(provider), timeoutMs, provider.name)
+      logger.providerSuccess(provider.name, Date.now() - startTime, context)
+      metrics.recordProviderSuccess(provider.name)
+      return result
+    } catch (error) {
+      lastError = error
+      const reason = error instanceof Error ? error.message : String(error)
+      logger.providerError(provider.name, reason, context)
+      metrics.recordProviderError(provider.name)
+
+      const next = providers[i + 1]
+      if (next) {
+        logger.providerFallback(provider.name, next.name, reason)
+        metrics.recordProviderFallback(provider.name, next.name)
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('All providers failed')
+}
+
+function getDefaultTimeout(): number {
+  const raw = Number(process.env.PROVIDER_TIMEOUT_MS)
+  return Number.isFinite(raw) && raw > 0 ? raw : 2000
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, providerName: string): Promise<T> {
+  if (!timeoutMs || timeoutMs <= 0) {
+    return promise
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${providerName} timeout after ${timeoutMs}ms`))
+    }, timeoutMs)
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
 }
 
