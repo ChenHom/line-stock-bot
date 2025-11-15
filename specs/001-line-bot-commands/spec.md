@@ -18,7 +18,7 @@
 **Acceptance Scenarios**:
 
 1. **Given** 使用者已加入 LINE Bot 為好友，**When** 使用者發送「股價 2330」，**Then** 系統在 3 秒內回應台積電的即時股價卡片，包含股票名稱、代號、現價、漲跌幅、成交量
-2. **Given** 使用者已加入 LINE Bot 為好友，**When** 使用者發送「股價 台積電」(使用股票名稱)，**Then** 系統能識別股票並回應相同的即時行情卡片
+2. **Given** 使用者已加入 LINE Bot 為好友，**When** 使用者發送「股價 台積電」(使用股票名稱)，**Then** 系統使用模糊比對識別股票，若信心分數 >80% 則回應最多前 2 筆符合的即時行情卡片
 3. **Given** 主要股價資料來源 (TWSE API) 無法回應，**When** 使用者發送「股價 2330」，**Then** 系統自動切換至備援來源 (Yahoo Finance) 並在 3 秒內回應行情資料
 4. **Given** 使用者在 45 秒內重複查詢同一股票，**When** 使用者發送「股價 2330」兩次，**Then** 第二次查詢應從快取讀取，回應時間小於 1 秒
 
@@ -60,26 +60,28 @@
 ### Edge Cases
 
 - **無效的股票代號**: 使用者輸入「股價 9999」(不存在的代號) 時，系統應回應「查無此股票代號，請確認後再試」
-- **網路逾時或 API 全數失敗**: 當主要與備援資料來源皆無法回應時，系統應在 3 秒內回應「目前無法取得資料，請稍後再試」，避免使用者長時間等待
+- **模糊名稱比對信心分數過低**: 使用者輸入「股價 電子」等過於模糊的名稱，導致最高信心分數 ≤80% 時，系統應回應「找到多筆相似結果，請使用更精確的名稱或股票代號」
+- **網路逾時或 API 全數失敗**: 當主要與備援資料來源皆無法回應時，系統應優先回應快取中的過期資料 (若存在)，並附註「資料可能稍有延遲」；若無快取資料則在 3 秒內回應「目前無法取得資料，請稍後再試」
 - **查詢關鍵字過於籠統**: 使用者輸入「新聞 股票」等過於廣泛的關鍵字時，系統應回應通用財經新聞或提示「請輸入更具體的關鍵字 (如公司名稱或產業)」
 - **快取失效處理**: 當 Redis 快取服務無法連線時，系統應直接呼叫 API 取得資料，確保服務可用性
 - **並發查詢**: 多位使用者同時查詢相同股票時，系統應正確處理快取共享，避免重複呼叫外部 API
 - **LINE Webhook 簽章驗證失敗**: 當收到無效的 webhook 請求時，系統應拒絕處理並記錄安全事件
+- **Flex Message 傳送失敗**: 當 LINE Messaging API 無法傳送 Flex Message 時，系統應記錄錯誤詳情並回應使用者「服務暫時無法使用，請稍後再試」
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: 系統 MUST 支援「股價 <股票代號或名稱>」指令，回應該股票的即時行情資訊
+- **FR-001**: 系統 MUST 支援「股價 <股票代號或名稱>」指令，回應該股票的即時行情資訊。當使用者輸入股票名稱時，系統 MUST 使用模糊比對 (fuzzy matching) 並計算信心分數；若最高信心分數 >80%，則回應前 1 筆符合結果；若 ≤80% 則提示「找到多筆相似結果，請使用更精確的名稱或股票代號」
 - **FR-002**: 系統 MUST 支援「新聞 <關鍵字>」指令，回應相關的最新產業新聞 (至少 3 則)
 - **FR-003**: 系統 MUST 支援「help」指令，回應所有可用指令的說明與使用範例
 - **FR-004**: 系統 MUST 定義並滿足服務等級目標 (SLO): 至少 95% 的查詢請求在 3 秒內取得回應。對於外部 Provider 錯誤或異常情況，系統 MUST 在 3 秒內回應備援內容或友善錯誤訊息。
 - **FR-005**: 股價資料 MUST 透過至少兩個 Provider (TWSE API 為主、Yahoo Finance 為備援) 取得，並在主要來源失敗時自動 fallback
 - **FR-006**: 新聞資料 MUST 透過至少兩個 Provider (Google News RSS 為主、Yahoo RSS 為備援) 取得，並在主要來源失敗時自動 fallback
-- **FR-007**: 股價查詢結果 MUST 快取 45 秒，新聞查詢結果 MUST 快取 15 分鐘
-- **FR-008**: 系統 MUST 使用 Flex Message 格式呈現結構化資料 (股價、新聞)，提供卡片化視覺體驗
+- **FR-007**: 股價查詢結果 MUST 快取 45 秒，新聞查詢結果 MUST 快取 15 分鐘。當快取過期且所有 Provider 失敗時，系統 MUST 回應快取中的過期資料 (stale data) 並在背景嘗試更新，確保使用者立即獲得回應
+- **FR-008**: 系統 MUST 使用 Flex Message 格式呈現結構化資料 (股價、新聞)，提供卡片化視覺體驗。當 Flex Message 傳送失敗時，系統 MUST 記錄錯誤並回應「服務暫時無法使用，請稍後再試」
 - **FR-009**: 系統 MUST 驗證 LINE Webhook 請求的簽章 (signature)，拒絕處理無效請求
-- **FR-010**: 系統 MUST 記錄所有錯誤與 Provider fallback 事件，便於監控與除錯
+- **FR-010**: 系統 MUST 使用結構化日誌系統 (structured logger, 例如 pino 或 winston) 記錄所有錯誤與 Provider fallback 事件，輸出 JSON 格式並包含 log levels (info/warn/error)，確保在 Vercel 環境中可追蹤與查詢。每筆日誌 MUST 包含以下欄位: timestamp (時間戳記), level (日誌等級), message (訊息), requestId (請求追蹤ID), userId (雜湊後的 LINE 使用者ID), providerName (資料來源名稱), latency (回應延遲時間)
 - **FR-011**: 系統 MUST 在無法識別指令時，提示使用者輸入「help」查看說明
 - **FR-012**: 快取服務失敗時，系統 MUST 降級至直接呼叫 API，確保服務可用性
 
@@ -131,7 +133,12 @@ See `/specs/001-line-bot-commands/tasks.md` for the full task list, acceptance c
 ### Session 2025-11-13
 
 - Q: Provider priority (primary source for quotes) → A: Provider order MUST be configurable; default = TWSE.
- - Q: FR-004 vs SC-001 SLO → A: 95% of requests respond in <3s; on provider failure the bot must return a friendly fallback or alternate content within 3s (and provider fallback should occur as quickly as practical; aim for <1s where feasible).
+- Q: FR-004 vs SC-001 SLO → A: 95% of requests respond in <3s; on provider failure the bot must return a friendly fallback or alternate content within 3s (and provider fallback should occur as quickly as practical; aim for <1s where feasible).
+- Q: Logging implementation for Vercel observability (FR-010 requires recording errors & fallback events) → A: Implement structured logger (e.g., pino, winston) with Vercel-compatible JSON output + log levels
+- Q: Cache behavior when TTL expires during provider outage (FR-007 defines TTLs but not stale data handling) → A: Serve stale data from cache if providers fail + attempt background refresh
+- Q: Behavior when LINE Flex Message API fails (FR-008 requires Flex Message but doesn't specify failure handling) → A: Log error and return generic "服務暫時無法使用" message (no data)
+- Q: Stock name matching strategy when multiple companies have similar names (FR-001 mentions "股票代號或名稱" but not matching logic) → A: Fuzzy matching with confidence score; show top 2 matches if >80% confidence
+- Q: Structured logging metadata fields (FR-010 requires JSON output but not field specification) → A: Standard + trace: timestamp, level, message, requestId, userId (hashed), providerName, latency
 
 	*Details*: The system MUST support at least two providers for quotes. The default primary provider is TWSE; implement a configuration (environment variable) to change priority (e.g., `QUOTE_PRIMARY_PROVIDER=twse|yahoo`). Providers MUST be selectable per feature and respected by `lib/providers/index.ts` logic and `withCache` wrappers.
 
