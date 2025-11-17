@@ -1,27 +1,23 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 0.0.0 → 1.0.0
-Change Type: MAJOR (Initial constitution establishment)
-Change Date: 2025-11-13
+Version Change: 1.0.0 → 1.1.0
+Change Type: MINOR (Mandate Traditional Chinese outputs)
+Change Date: 2025-11-17
 
 Modified Principles:
-- [NEW] I. Serverless-First Architecture
-- [NEW] II. Provider Abstraction & Fallback
-- [NEW] III. Caching Strategy
-- [NEW] IV. TypeScript Type Safety
-- [NEW] V. Flex Message UI
+- None (principle statements unchanged)
 
 Added Sections:
-- Core Principles (5 principles)
-- Technical Standards
-- Development Workflow
-- Governance
+- Technical Standards: Documentation & Response Language requirement
+
+Removed Sections:
+- None
 
 Template Status:
-✅ plan-template.md - Aligned (Technical Context includes serverless platform, caching, performance)
-✅ spec-template.md - Aligned (User stories support independent testing)
-✅ tasks-template.md - Aligned (Phase structure supports modular implementation)
+✅ plan-template.md - No language guidance updates required
+✅ spec-template.md - Existing instructions already assume Traditional Chinese narratives
+✅ tasks-template.md - No changes needed
 
 Follow-up TODOs: None
 -->
@@ -94,6 +90,21 @@ LINE 聊天機器人回應 MUST 使用 Flex Message 格式呈現結構化資料 
 - Template MUST 可重用與組合
 - 錯誤訊息 MUST 以簡潔的文字訊息呈現
 
+### VI. Observability & Incident Visibility
+
+所有 Serverless 函式 MUST 產出可查詢的結構化日誌，並回報快取命中率、Provider 成功率與 fallback 事件。事件追蹤 MUST 使用既有的 `lib/logger.ts` 與 `lib/monitoring.ts` 抽象，禁止重新發明 logging/metrics 介面。
+
+**理由**:
+- 伺服器無狀態、壽命短，必須透過集中式日誌與指標掌握健康狀況
+- 快速界定 provider 或快取異常，縮短修復時間
+- 避免觀測資料分散在 ad-hoc `console.log`
+
+**實作要求**:
+- 所有錯誤、fallback、快取 miss MUST 使用 `logger` 的結構化介面
+- `monitoring` 模組 MUST 紀錄 cache hit/miss 與 provider latency；若監控停用也需安全短路
+- 日誌需包含 `requestId` 或可追蹤的相依資訊 (如 symbol, command)
+- 新增監控事件 MUST 同步更新 README 或運維文件
+
 ## Technical Standards
 
 **Platform**: Vercel Serverless Functions  
@@ -101,9 +112,12 @@ LINE 聊天機器人回應 MUST 使用 Flex Message 格式呈現結構化資料 
 **Language**: TypeScript 5.x  
 **Package Manager**: pnpm  
 **Primary Dependencies**: 
-- `@line/bot-sdk` - LINE Messaging API
+- `@line/bot-sdk` - LINE Messaging API handler
 - `zod` - Schema validation
-- `@upstash/redis` - Caching layer
+- `@upstash/redis` - Serverless caching層
+- `Fuse.js` - 指令/代號模糊比對
+- `tsx` - TypeScript runtime/開發伺服器
+- `vitest` - 單元與整合測試框架
 
 **API Integrations**:
 - LINE Messaging API - 聊天機器人介面
@@ -117,10 +131,23 @@ LINE 聊天機器人回應 MUST 使用 Flex Message 格式呈現結構化資料 
 - 快取命中率: > 80%
 - Provider fallback 延遲: < 1 秒
 
+**Observability Stack**:
+- `lib/logger.ts` - JSON 結構化日誌
+- `lib/monitoring.ts` - Cache/provider 指標與事件
+- Vercel log drains - 供查詢之集中式儲存 (可接 Slack/警報)
+
+**Testing Framework**:
+- `vitest` - 單元、整合測試
+- `@vitest/coverage-istanbul` (選用) - 覆蓋率量測
+
 **Security Requirements**:
 - LINE Webhook MUST 驗證 signature
 - 環境變數 MUST 儲存所有 API keys 與 secrets
 - 禁止將敏感資訊提交至版本控制
+
+**Documentation & Response Language**:
+- 所有說明文件、系統自動產生的流程輸出與對使用者的回應 MUST 全數使用正體中文
+- 若外部來源提供非正體中文內容，MUST 以正體中文摘要或翻譯後才可呈現給使用者
 
 ## Development Workflow
 
@@ -139,10 +166,16 @@ LINE 聊天機器人回應 MUST 使用 Flex Message 格式呈現結構化資料 
 - 使用者看到的錯誤訊息 MUST 簡潔且友善
 - Provider 失敗 MUST 記錄來源與原因
 
-**Testing** (當需要時):
-- Provider 整合測試 MUST 使用 mock 資料
-- Flex Message template MUST 可視化驗證
-- Webhook 端點 MUST 可使用 LINE Bot SDK 的測試工具
+**Testing**:
+- 單元與整合測試 MUST 使用 `vitest`
+- Provider 整合測試 MUST 以 mock/fixture 覆蓋失敗與 fallback 流程
+- Flex Message template MUST 透過 snapshot 或視覺化驗證保持穩定
+- Webhook 端點 MUST 可用 LINE Bot SDK 測試工具驗證簽章與互動
+
+**Observability Operations**:
+- `logger` 與 `monitoring` 呼叫 MUST 於 PR 中接受檢視，避免靜默錯誤
+- 每次新增 Provider 或 cache 策略時 MUST 定義對應的指標維度 (symbol, provider, ttl bucket)
+- 重大事件 (fallback storm, cache miss 突增) MUST 有 runbook 在 `specs/.../quickstart.md` 或 README 連結
 
 ## Governance
 
@@ -166,4 +199,4 @@ LINE 聊天機器人回應 MUST 使用 Flex Message 格式呈現結構化資料 
 
 **Guidance Files**: 參考 `.github/prompts/` 中的 speckit 命令進行功能開發流程。
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-13 | **Last Amended**: 2025-11-13
+**Version**: 1.1.0 | **Ratified**: 2025-11-13 | **Last Amended**: 2025-11-17
