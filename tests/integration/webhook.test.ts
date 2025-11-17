@@ -167,7 +167,15 @@ describe('Webhook Integration Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+
+      // Mock TWSE OTC attempt (still empty to force fallback)
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
 
@@ -197,21 +205,28 @@ describe('Webhook Integration Tests', () => {
 
       await sendCommand('股價 2330')
 
-      // First call is to TWSE API
+      // First call is to TWSE API (上市)
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('mis.twse.com.tw'),
+        expect.stringContaining('tse_2330.tw'),
         expect.any(Object)
       )
 
-      // Second call is to Yahoo API (fallback)
+      // Second call retries TWSE OTC channel before falling back
       expect(mockFetch).toHaveBeenNthCalledWith(
         2,
+        expect.stringContaining('otc_2330.tw'),
+        expect.any(Object)
+      )
+
+      // Third call is to Yahoo API (fallback)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        3,
         expect.stringContaining('yahoo'),
         expect.any(Object)
       )
 
-      // Third call is to LINE reply API
+      // Fourth call is to LINE reply API
       const replyCall = mockFetch.mock.calls.find((call: any) =>
         call[0].includes('api.line.me')
       )
@@ -220,6 +235,60 @@ describe('Webhook Integration Tests', () => {
       const body = JSON.parse(replyCall[1].body)
       expect(body.messages[0].type).toBe('flex')
       expect(body.messages[0].altText).toContain('股價')
+    })
+
+    it('should handle OTC stock codes such as "股價 6584"', async () => {
+      // First attempt (上市) returns empty
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+
+      // Second attempt (上櫃) returns valid payload
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          msgArray: [{
+            c: '6584',
+            n: '南俊國際',
+            z: '347.50',
+            y: '316.00',
+            o: '328.00',
+            h: '347.50',
+            l: '322.50',
+            t: '11:30:00',
+            d: '2025/11/17'
+          }]
+        }),
+        text: async () => '{}',
+      })
+
+      await sendCommand('股價 6584')
+
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('tse_6584.tw'),
+        expect.any(Object)
+      )
+
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('otc_6584.tw'),
+        expect.any(Object)
+      )
+
+      // The final call should be LINE reply
+      const replyCall = mockFetch.mock.calls.find((call: any) =>
+        call[0].includes('api.line.me')
+      )
+      expect(replyCall).toBeDefined()
+
+      const body = JSON.parse(replyCall[1].body)
+      expect(body.messages[0].type).toBe('flex')
+      expect(body.messages[0].altText).toContain('6584')
     })
 
     it('should handle "新聞 半導體" command and reply with news Flex', async () => {

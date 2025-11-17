@@ -27,7 +27,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
 
@@ -68,7 +74,7 @@ describe('Cache Performance Tests', () => {
       const duration1 = Date.now() - start1
 
       expect(quote1.symbol).toBe('2330')
-      expect(mockFetch).toHaveBeenCalledTimes(2) // TWSE + Yahoo
+      expect(mockFetch).toHaveBeenCalledTimes(3) // TWSE tse + TWSE otc + Yahoo
       expect(cacheSetSpy).toHaveBeenCalled()
 
       // Second call: cache hit (return cached quote for all cache gets)
@@ -79,7 +85,7 @@ describe('Cache Performance Tests', () => {
       const duration2 = Date.now() - start2
 
       expect(quote2).toEqual(quote1)
-      expect(mockFetch).toHaveBeenCalledTimes(2) // No additional fetch (cache hit)
+      expect(mockFetch).toHaveBeenCalledTimes(3) // No additional fetch (cache hit)
       expect(cacheGetSpy).toHaveBeenCalled()
 
       // Cache hit should be faster than 1000ms
@@ -92,7 +98,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
 
@@ -128,7 +140,7 @@ describe('Cache Performance Tests', () => {
       const quote = await getQuoteWithFallback('2330')
 
       expect(quote.symbol).toBe('2330')
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenCalledTimes(3)
       expect(cacheGetSpy).toHaveBeenCalled()
       expect(cacheSetSpy).toHaveBeenCalled()
     })
@@ -145,7 +157,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
       mockFetch.mockResolvedValueOnce({
@@ -173,7 +191,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
       mockFetch.mockResolvedValueOnce({
@@ -203,8 +227,8 @@ describe('Cache Performance Tests', () => {
 
       expect(quote1.symbol).toBe('2330')
       expect(quote2.symbol).toBe('2330')
-      // Should call provider twice (no cache): 2x(TWSE + Yahoo) = 4
-      expect(mockFetch).toHaveBeenCalledTimes(4)
+      // Should call providers twice without cache: 2 × (TWSE tse + TWSE otc + Yahoo) = 6
+      expect(mockFetch).toHaveBeenCalledTimes(6)
     })
   })
 
@@ -304,7 +328,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
       mockFetch.mockResolvedValueOnce({
@@ -332,7 +362,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
       mockFetch.mockResolvedValueOnce({
@@ -360,8 +396,6 @@ describe('Cache Performance Tests', () => {
       await getQuoteWithFallback('2330')
       await getQuoteWithFallback('2317')
 
-      // Each getQuoteWithFallback calls cacheGet twice (TWSE + Yahoo fallback)
-      // So 2 symbols × 2 providers = 4 calls
       expect(cacheGetSpy).toHaveBeenCalled()
 
       // Check that different cache keys were used for different symbols
@@ -418,7 +452,13 @@ describe('Cache Performance Tests', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ Code: 0, Data: [] }),
+        json: async () => ({ msgArray: [] }),
+        text: async () => '{}',
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ msgArray: [] }),
         text: async () => '{}',
       })
       mockFetch.mockResolvedValueOnce({
