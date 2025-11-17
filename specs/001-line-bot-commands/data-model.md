@@ -39,11 +39,13 @@ Validation Rules:
 ### Command
 - `cmd` (enum): `price`, `news`, `help`
 - `args` (string) - user query parameters (stock symbol/name, news keyword, etc.)
+- `rawInput` (string) - original user text used for logging + quick reply context
 
 Parsing Rules:
 - Command extracted from message text (e.g., "股價 2330" → cmd: `price`, args: "2330")
 - Trim whitespace from args
 - Case-insensitive command matching
+- Numeric-only `rawInput` (e.g., `3017`) is treated as an unknown command but persisted so quick replies can reuse it
 
 ### Fuzzy Match Result
 - `symbol` (string) - matched stock symbol
@@ -227,5 +229,22 @@ User Input (keyword)
 - `Expired` → TTL ≤ 0, data stale but still in Redis
 - `Missing` → Key not found in Redis
 - `Error` → Redis connection/operation failed
+
+### Quick Reply Action
+- `label` (string) - button text displayed to the user (e.g., `查股價`)
+- `text` (string) - command text injected back into the chat when tapped (e.g., `股價 3017`)
+- `sourceInput` (string) - last numeric input captured from the user; logged for observability
+- `type` (string, literal `message`) - LINE quick reply action type
+
+Validation Rules:
+- `label` MUST be <= 20 characters per LINE requirement
+- `text` MUST include the canonical keyword followed by the numeric input (FR-013)
+- `sourceInput` MUST match `/^\d{1,6}$/` before reuse; otherwise quick replies fall back to generic help buttons
+
+### Unrecognized Numeric Input Flow
+- `DetectedRawNumber` → Webhook parses message, detects it only contains digits
+- `ClarificationReply` → Help Flex message renders with quick replies that inject `股價 {digits}` and `新聞 {digits}`
+- `UserSelectsQuote` → Quick reply sends `股價 {digits}` back to webhook → standard quote flow resumes
+- `UserSelectsNews` → Quick reply sends `新聞 {digits}` back to webhook → news flow resumes
 
 

@@ -29,7 +29,8 @@ export const NewsItemSchema = z.object({
   title: z.string().min(1, 'Title must be non-empty'),
   url: z.string().url('URL must be valid'),
   source: z.string().optional(),
-  publishedAt: z.string().optional()
+  publishedAt: z.string().optional(),
+  description: z.string().optional()
 })
 
 export type NewsItem = z.infer<typeof NewsItemSchema>

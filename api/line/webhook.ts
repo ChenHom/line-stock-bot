@@ -1,10 +1,17 @@
 // api/line/webhook.ts
 import { getQuoteWithFallback, getIndustryNews } from '../../lib/providers'
-import { createStockQuoteMessage, createNewsListMessage, buildStatusFlex, createHelpMessage } from '../../lib/flex'
+import {
+  createStockQuoteMessage,
+  createNewsListMessage,
+  buildStatusFlex,
+  createHelpMessage,
+  buildHelpQuickReplies
+} from '../../lib/flex'
 import { logger } from '../../lib/logger'
 import { fuzzyMatchSymbol } from '../../lib/symbol'
 
 import type { IncomingMessage, ServerResponse } from 'http'
+import type { LineQuickReplyItem } from '../../lib/flex'
 import crypto from 'node:crypto'
 
 
@@ -42,7 +49,11 @@ async function replyText(replyToken: string, text: string) {
   }
 }
 
-async function replyFlex(replyToken: string, altText: string, flex: any) {
+interface ReplyFlexOptions {
+  quickReplyItems?: LineQuickReplyItem[]
+}
+
+async function replyFlex(replyToken: string, altText: string, flex: any, options?: ReplyFlexOptions) {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN
   if (!replyToken || !token) return
 
@@ -52,7 +63,12 @@ async function replyFlex(replyToken: string, altText: string, flex: any) {
   const t = flex?.type
   if (t !== 'bubble' && t !== 'carousel') return replyText(replyToken, altText)
 
-  const payload = { replyToken, messages: [{ type: 'flex', altText, contents: flex }] }
+  const message: any = { type: 'flex', altText, contents: flex }
+  if (options?.quickReplyItems && options.quickReplyItems.length > 0) {
+    message.quickReply = { items: options.quickReplyItems }
+  }
+
+  const payload = { replyToken, messages: [message] }
 
   // 調試：檢查 messages 有值
   // logger.debug('replyFlex payload', { payload: JSON.stringify(payload) })
@@ -75,8 +91,14 @@ function parseCommand(text: string): { cmd: string; args: string } {
   return { cmd: (head || '').toLowerCase(), args: rest.join(' ') }
 }
 
+function extractNumericInput(text: string): string | null {
+  if (!text) return null
+  return NUMERIC_ONLY_REGEX.test(text) ? text : null
+}
+
 /* ---------- main handler ---------- */
 const STOCK_CODE_REGEX = /^\d{4}$/
+const NUMERIC_ONLY_REGEX = /^\d{1,6}$/
 const HELP_ALIASES = new Set(['help', '/help', '幫助', '？'])
 const BROAD_NEWS_KEYWORDS = new Set([
   'news',
@@ -132,12 +154,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const events: any[] = Array.isArray(payload?.events) ? payload.events : []
   for (const ev of events) {
     if (ev.type === 'message' && ev.message?.type === 'text' && ev.replyToken) {
-      const { cmd, args } = parseCommand(String(ev.message.text || ''))
+      const rawText = typeof ev.message.text === 'string' ? ev.message.text : ''
+      const trimmedText = rawText.trim()
+      const numericOnlyInput = extractNumericInput(trimmedText)
+      const { cmd, args } = parseCommand(trimmedText)
       logger.info('webhook_command', { cmd, args })
 
       try {
         if (HELP_ALIASES.has(cmd)) {
-          await replyFlex(ev.replyToken, '可用指令', createHelpMessage())
+          await replyFlex(ev.replyToken, '可用指令', createHelpMessage(), {
+            quickReplyItems: buildHelpQuickReplies()
+          })
         } else if (cmd === '股價' || cmd === 'price') {
           await handleStockQuoteCommand(ev.replyToken, args)
         } else if (cmd === '新聞' || cmd === 'news') {
@@ -145,9 +172,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         } else {
           const helpFlex = createHelpMessage({
             title: '無法識別的指令',
-            contextNote: '請輸入「help」或直接點選下方範例重新查詢。'
+            contextNote: numericOnlyInput
+              ? '偵測到您輸入的代號，可直接點擊下方快速按鈕重新查詢。'
+              : '請輸入「help」或直接點選下方範例重新查詢。',
+            quickReplyNumericInput: numericOnlyInput || undefined
           })
-          await replyFlex(ev.replyToken, '無法識別的指令', helpFlex)
+          const quickReplyItems = buildHelpQuickReplies({ lastNumericInput: numericOnlyInput || undefined })
+          if (numericOnlyInput) {
+            logger.info('webhook_numeric_retry_buttons', { sourceInput: numericOnlyInput })
+          }
+          await replyFlex(ev.replyToken, '無法識別的指令', helpFlex, { quickReplyItems })
         }
       } catch (error) {
         logger.webhookError(error instanceof Error ? error : String(error), { cmd, args })
