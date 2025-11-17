@@ -82,6 +82,35 @@ describe('Quote Providers', () => {
 
       await expect(getQuoteTwse('2330')).rejects.toThrow()
     })
+
+    it('should retry OTC channel when TSE payload is empty', async () => {
+      const emptyResponse = { msgArray: [] }
+      const otcResponse = {
+        msgArray: [{
+          c: '6584',
+          n: '南俊國際',
+          z: '347.50',
+          y: '316.00',
+          o: '328.00',
+          h: '347.50',
+          l: '322.50',
+          t: '11:30:00',
+          d: '2025/11/17'
+        }]
+      }
+
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => emptyResponse } as Response)
+        .mockResolvedValueOnce({ ok: true, json: async () => otcResponse } as Response)
+
+      const result = await getQuoteTwse('6584')
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(global.fetch).toHaveBeenNthCalledWith(1, expect.stringContaining('tse_6584.tw'), expect.any(Object))
+      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('otc_6584.tw'), expect.any(Object))
+      expect(result.marketSymbol).toBe('6584.TWO')
+      expect(result.price).toBeCloseTo(347.5)
+    })
   })
 
   describe('getQuoteYahoo', () => {
@@ -137,6 +166,39 @@ describe('Quote Providers', () => {
       } as Response)
 
       await expect(getQuoteYahoo('2330')).rejects.toThrow('Yahoo quote http 404')
+    })
+
+    it('should retry with TWO suffix when TW symbol not found', async () => {
+      const emptyResult = { quoteResponse: { result: [] } }
+      const validResult = {
+        quoteResponse: {
+          result: [{
+            symbol: '6584.TWO',
+            shortName: '南俊國際',
+            regularMarketPrice: 347.5,
+            regularMarketChange: 5.3,
+            regularMarketChangePercent: 1.5,
+            regularMarketOpen: 340,
+            regularMarketDayHigh: 348,
+            regularMarketDayLow: 332,
+            regularMarketPreviousClose: 342,
+            currency: 'TWD',
+            regularMarketTime: 1699876800
+          }]
+        }
+      }
+
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => emptyResult } as Response)
+        .mockResolvedValueOnce({ ok: true, json: async () => validResult } as Response)
+
+      const quote = await getQuoteYahoo('6584')
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(global.fetch).toHaveBeenNthCalledWith(1, expect.stringContaining('6584.TW'), expect.any(Object))
+      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('6584.TWO'), expect.any(Object))
+      expect(quote.marketSymbol).toBe('6584.TWO')
+      expect(quote.price).toBeCloseTo(347.5)
     })
   })
 })

@@ -14,7 +14,30 @@ interface YahooQuoteResponse {
  * Yahoo Finance provider (Rapid API compatible endpoint).
  */
 export async function getQuoteYahoo(rawSymbol: string): Promise<Quote> {
-  const marketSymbol = toMarketSymbol(rawSymbol)
+  const normalized = rawSymbol.trim()
+  const markets: Array<'TW' | 'TWO'> = ['TW', 'TWO']
+  let lastError: Error | null = null
+
+  for (const market of markets) {
+    try {
+      const quote = await fetchYahooQuote(normalized, market)
+      if (quote) {
+        return quote
+      }
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error))
+      lastError = normalizedError
+      if (!isYahooEmptyError(normalizedError)) {
+        throw normalizedError
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Yahoo quote empty')
+}
+
+async function fetchYahooQuote(symbol: string, market: 'TW' | 'TWO'): Promise<Quote> {
+  const marketSymbol = toMarketSymbol(symbol, market)
   const response = await fetch(YAHOO_ENDPOINT + encodeURIComponent(marketSymbol), { cache: 'no-store' })
   if (!response.ok) {
     throw new Error(`Yahoo quote http ${response.status}`)
@@ -31,7 +54,7 @@ export async function getQuoteYahoo(rawSymbol: string): Promise<Quote> {
   const changePercent = chooseNumber(quoteData.regularMarketChangePercent)
 
   const quote = {
-    symbol: rawSymbol.trim(),
+    symbol,
     marketSymbol,
     name: quoteData.longName || quoteData.shortName,
     price,
@@ -47,6 +70,10 @@ export async function getQuoteYahoo(rawSymbol: string): Promise<Quote> {
   }
 
   return QuoteSchema.parse(quote)
+}
+
+function isYahooEmptyError(error: Error): boolean {
+  return /Yahoo quote empty/i.test(error.message)
 }
 
 function chooseNumber(...candidates: Array<number | string | undefined>): number | undefined {
