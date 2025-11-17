@@ -84,6 +84,7 @@
 - **FR-010**: 系統 MUST 使用結構化日誌系統 (structured logger, 例如 pino 或 winston) 記錄所有錯誤與 Provider fallback 事件，輸出 JSON 格式並包含 log levels (info/warn/error)，確保在 Vercel 環境中可追蹤與查詢。每筆日誌 MUST 包含以下欄位: timestamp (時間戳記), level (日誌等級), message (訊息), requestId (請求追蹤ID), userId (雜湊後的 LINE 使用者ID), providerName (資料來源名稱), latency (回應延遲時間)
 - **FR-011**: 系統 MUST 在無法識別指令時，提示使用者輸入「help」查看說明
 - **FR-012**: 快取服務失敗時，系統 MUST 降級至直接呼叫 API，確保服務可用性
+- **FR-013**: 當使用者輸入僅有數字的內容而觸發「無法識別的指令」回應時，回應中顯示的「查股價」與「看新聞」快速按鈕 MUST 自動帶入該次輸入的數字並送出「股價 <代號>」或「新聞 <代號>」，避免使用者重複輸入
 
 ### Key Entities
 
@@ -141,4 +142,8 @@ See `/specs/001-line-bot-commands/tasks.md` for the full task list, acceptance c
 - Q: Structured logging metadata fields (FR-010 requires JSON output but not field specification) → A: Standard + trace: timestamp, level, message, requestId, userId (hashed), providerName, latency
 
 	*Details*: The system MUST support at least two providers for quotes. The default primary provider is TWSE; implement a configuration (environment variable) to change priority (e.g., `QUOTE_PRIMARY_PROVIDER=twse|yahoo`). Providers MUST be selectable per feature and respected by `lib/providers/index.ts` logic and `withCache` wrappers.
+
+### Session 2025-11-15
+
+- Q: 當使用者輸入純數字後出現「無法識別的指令」提示時，快速按鈕是否要自動帶入該數字？ → A: 是，兩個快速按鈕都要帶入最後一次輸入的數字並組合成完整指令
 

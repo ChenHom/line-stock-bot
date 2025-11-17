@@ -1,5 +1,14 @@
 import { Quote, NewsItem } from './types'
 
+export interface LineQuickReplyItem {
+  type: 'action'
+  action: {
+    type: 'message'
+    label: string
+    text: string
+  }
+}
+
 const fmt = {
   n: (x: number | undefined) => (typeof x === 'number' && Number.isFinite(x) ? x.toFixed(2) : '-'),
   pct: (x: number | undefined) =>
@@ -31,6 +40,13 @@ const HELP_COMMANDS = [
     example: 'help'
   }
 ]
+
+const QUICK_REPLY_DEFAULTS = {
+  price: '股價 2330',
+  news: '新聞 台積電'
+}
+
+const NUMERIC_INPUT_REGEX = /^\d{1,6}$/
 
 export function createStockQuoteMessage(quote: Quote, options?: { isStale?: boolean }) {
   const { isStale } = options || {}
@@ -129,7 +145,7 @@ export function createNewsListMessage(keyword: string, items: NewsItem[], option
     return buildStatusFlex('找不到相關新聞', `關鍵字：${keyword}`, 'info')
   }
 
-  const bubbles = items.slice(0, 5).map((item) => createNewsBubble(keyword, item))
+  const bubbles: any[] = items.slice(0, 5).map((item) => createNewsBubble(keyword, item))
 
   if (options?.isStale) {
     bubbles.unshift(createStaleNoticeBubble(keyword))
@@ -249,9 +265,10 @@ function truncateText(value: string, length: number): string {
   return `${value.slice(0, length - 1)}…`
 }
 
-export function createHelpMessage(options?: { title?: string; contextNote?: string }) {
+export function createHelpMessage(options?: { title?: string; contextNote?: string; quickReplyNumericInput?: string }) {
   const title = options?.title ?? '指令使用說明'
   const contextNote = options?.contextNote
+  const quickReplyItems = buildHelpQuickReplies({ lastNumericInput: options?.quickReplyNumericInput })
 
   const bodyContents: any[] = [
     { type: 'text', text: title, weight: 'bold', size: 'lg', wrap: true }
@@ -286,10 +303,12 @@ export function createHelpMessage(options?: { title?: string; contextNote?: stri
       type: 'box',
       layout: 'vertical',
       spacing: 'sm',
-      contents: [
-        { type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label: '查股價', text: '股價 2330' } },
-        { type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label: '看新聞', text: '新聞 台積電' } }
-      ]
+      contents: quickReplyItems.map((item) => ({
+        type: 'button',
+        style: 'secondary',
+        height: 'sm',
+        action: item.action
+      }))
     }
   ]
 
@@ -309,4 +328,21 @@ export function createHelpMessage(options?: { title?: string; contextNote?: stri
       contents: footerContents
     }
   }
+}
+
+function sanitizeNumericInput(value?: string | null): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  return NUMERIC_INPUT_REGEX.test(trimmed) ? trimmed : null
+}
+
+export function buildHelpQuickReplies(options?: { lastNumericInput?: string }): LineQuickReplyItem[] {
+  const numeric = sanitizeNumericInput(options?.lastNumericInput)
+  const priceText = numeric ? `股價 ${numeric}` : QUICK_REPLY_DEFAULTS.price
+  const newsText = numeric ? `新聞 ${numeric}` : QUICK_REPLY_DEFAULTS.news
+
+  return [
+    { type: 'action', action: { type: 'message', label: '查股價', text: priceText } },
+    { type: 'action', action: { type: 'message', label: '看新聞', text: newsText } }
+  ]
 }

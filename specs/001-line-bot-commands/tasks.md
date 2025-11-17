@@ -8,8 +8,8 @@ description: "Task list for implementing LINE bot commands and required infra ad
 **Generated**: 2025-11-14  
 **Input**: Design documents from `spec.md`, `plan.md`, `data-model.md`, `contracts/`
 
-**Total Tasks**: 32  
-**Completion**: 18/32 (56.3%)
+**Total Tasks**: 42  
+**Completion**: 18/42 (42.9%)
 
 ---
 
@@ -152,6 +152,8 @@ description: "Task list for implementing LINE bot commands and required infra ad
 - [X] T026 [P] [US3] Create Flex Message template for help command in lib/flex.ts (createHelpMessage)
 - [X] T027 [US3] Implement help command handler with alias support (help/幫助) in api/line/webhook.ts
 - [X] T028 [US3] Implement unknown command handler with help suggestion in api/line/webhook.ts
+- [X] T029 [P] [US3] Build quick reply factory in lib/flex.ts that injects numeric-only input into 查股價/看新聞 messageAction payloads per FR-013
+- [X] T030 [US3] Enhance unknown command pipeline in api/line/webhook.ts to detect numeric-only input, log sourceInput, and attach FR-013 quick reply actions before sending help Flex
 
 **Dependencies**: Requires Phase 1-2 completion. Can be developed in parallel with Phase 3-4.
 
@@ -161,6 +163,7 @@ description: "Task list for implementing LINE bot commands and required infra ad
 - ✅ `help` returns Flex Message with all command descriptions and examples
 - ✅ `幫助` returns same help message
 - ✅ Unknown command returns friendly error with help suggestion
+- ✅ Numeric-only input fallback exposes quick reply buttons that auto-populate the last digits for「股價」與「新聞」指令
 - ✅ Help message includes: 股價 <代號>, 新聞 <關鍵字>, help
 
 ---
@@ -171,20 +174,20 @@ description: "Task list for implementing LINE bot commands and required infra ad
 
 ### Tasks
 
-- [ ] T029 [P] Add unit tests for fuzzy matching in tests/unit/symbol.test.ts
-- [ ] T030 [P] Add unit tests for Flex Message templates in tests/unit/flex.test.ts
-- [ ] T031 [P] Add integration test for end-to-end stock query flow in tests/integration/webhook.test.ts
-- [ ] T032 [P] Add integration test for news query flow in tests/integration/webhook.test.ts
-- [ ] T033 Add performance test script simulating 100 concurrent users in scripts/load-test.ts
-- [ ] T034 [P] Update README.md with setup, deployment, and troubleshooting guide
-- [ ] T035 [P] Add CI/CD configuration for automated testing in .github/workflows/test.yml
-- [ ] T036 Add monitoring dashboard configuration for cache hit rate and provider fallback metrics
-- [ ] T037 Add alert rules for SLO violations (>5% requests >3s) and high fallback rates
-- [ ] T038 Add fallback latency tests verifying <1s provider switch in tests/integration/fallback.test.ts
-- [ ] T039 Implement Flex Message send failure handling with error logging in api/line/webhook.ts
-- [ ] T040 Add comprehensive error messages for all edge cases per spec in api/line/webhook.ts
+- [ ] T031 [P] Add unit tests for fuzzy matching in tests/unit/symbol.test.ts
+- [ ] T032 [P] Add unit tests for Flex Message templates and quick reply factory in tests/unit/flex.test.ts
+- [ ] T033 [P] Add integration test for end-to-end stock query flow in tests/integration/webhook.test.ts
+- [ ] T034 [P] Add integration test for news query flow in tests/integration/webhook.test.ts
+- [ ] T035 Add performance test script simulating 100 concurrent users in scripts/load-test.ts
+- [ ] T036 [P] Update README.md with setup, deployment, and troubleshooting guide
+- [ ] T037 [P] Add CI/CD configuration for automated testing in .github/workflows/test.yml
+- [ ] T038 Add monitoring dashboard configuration for cache hit rate and provider fallback metrics
+- [ ] T039 Add alert rules for SLO violations (>5% requests >3s) and high fallback rates
+- [ ] T040 Add fallback latency tests verifying <1s provider switch in tests/integration/fallback.test.ts
+- [ ] T041 Implement Flex Message send failure handling with error logging in api/line/webhook.ts
+- [ ] T042 Add comprehensive error messages for all edge cases per spec in api/line/webhook.ts
 
-**Parallel Opportunities**: Most tasks in this phase can be executed in parallel except dependencies: T031-T032 depend on Phase 3-4 completion. T033 depends on T031-T032.
+**Parallel Opportunities**: Most tasks in this phase can be executed in parallel except dependencies: T033-T034 depend on Phase 3-4 completion. T035 depends on T033-T034.
 
 ---
 

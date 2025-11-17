@@ -2,7 +2,7 @@
 
 **Feature**: LINE 聊天機器人指令系統  
 **Date**: 2025-11-13  
-**Updated**: 2025-11-13 (Phase 0 completion)
+**Updated**: 2025-11-15 (Phase 0 refresh)
 
 ## Summary
 
@@ -161,6 +161,23 @@ This research documents design choices and clarifies implementation details wher
   }
   ```
 
+## Question 9: Quick Reply Auto-Fill After Unrecognized Numeric Input
+
+- **Decision**: When a user sends only digits and receives the "無法識別的指令" fallback, the generated quick reply buttons MUST use `messageAction` payloads that prepend the correct keyword (e.g., `股價 3017`, `新聞 3017`) so users can retry with a single tap.
+- **Rationale**: Message actions echo text back to the chat without server-side state, satisfying FR-013 while keeping responses under the 3-second SLO and avoiding additional persistence.
+- **Alternatives Considered**:
+  - Postback actions with Redis state: heavier and unnecessary because the numeric text is already present in the webhook event.
+  - Prompting users to retype manually: contradicts the clarification and harms UX.
+  - Persisting last input per user: adds storage cost and races across devices.
+- **Implementation**:
+  ```ts
+  const quickReplies: QuickReplyAction[] = [
+    { label: '查股價', text: `股價 ${lastNumericInput}`, sourceInput: lastNumericInput },
+    { label: '看新聞', text: `新聞 ${lastNumericInput}`, sourceInput: lastNumericInput }
+  ]
+  sendHelpFallback(event.replyToken, quickReplies)
+  ```
+
 ## Research Outcome / Action Items
 
 ### Completed Research Areas
@@ -172,6 +189,7 @@ This research documents design choices and clarifies implementation details wher
 6. ✅ **Testing strategy**: Vitest with mocked providers + Upstash integration tests
 7. ✅ **Structured logging**: Enhanced custom logger with JSON output + metadata fields
 8. ✅ **Stale cache**: Stale-while-revalidate pattern for resilience
+9. ✅ **Quick reply auto-fill**: Message actions reuse the last numeric input without extra storage
 
 ### Implementation Tasks
 1. Add Upstash wrapper (`lib/cache.ts`) with REST client and `setex`/`get` operations + stale-while-revalidate support
@@ -182,6 +200,7 @@ This research documents design choices and clarifies implementation details wher
 6. Enhance `lib/logger.ts` with requestId, userId, providerName, latency fields
 7. Update provider fallback logic to support configurable order + timeout handling
 8. Add metadata to Flex Message when serving stale cache ("資料可能稍有延遲")
+9. Build quick reply factory that injects the last numeric input into `查股價`/`看新聞` message actions for FR-013
 
 **Status**: All research questions resolved. Ready for Phase 1 (Design & Contracts).
 
