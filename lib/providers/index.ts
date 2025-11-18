@@ -116,6 +116,7 @@ async function executeWithFallback<T, P extends { name: string; timeoutMs?: numb
   }
 
   let lastError: unknown
+  let notFoundError: Error | null = null
 
   for (let i = 0; i < providers.length; i++) {
     const provider = providers[i]
@@ -130,6 +131,9 @@ async function executeWithFallback<T, P extends { name: string; timeoutMs?: numb
     } catch (error) {
       lastError = error
       const reason = error instanceof Error ? error.message : String(error)
+      if (!notFoundError && isProviderNotFoundError(error)) {
+        notFoundError = error instanceof Error ? error : new Error(reason)
+      }
       logger.providerError(provider.name, reason, context)
       metrics.recordProviderError(provider.name)
 
@@ -141,12 +145,21 @@ async function executeWithFallback<T, P extends { name: string; timeoutMs?: numb
     }
   }
 
+  if (notFoundError) {
+    throw notFoundError
+  }
+
   throw lastError instanceof Error ? lastError : new Error('All providers failed')
 }
 
 function getDefaultTimeout(): number {
   const raw = Number(process.env.PROVIDER_TIMEOUT_MS)
   return Number.isFinite(raw) && raw > 0 ? raw : 2000
+}
+
+function isProviderNotFoundError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /(empty|not\s*found|unknown\s*symbol|invalid\s*symbol)/i.test(message)
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, providerName: string): Promise<T> {
