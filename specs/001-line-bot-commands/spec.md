@@ -76,7 +76,7 @@
 - **FR-002**: 系統 MUST 支援「新聞 <關鍵字>」指令，回應相關的最新產業新聞 (至少 3 則)
 - **FR-003**: 系統 MUST 支援「help」指令，回應所有可用指令的說明與使用範例
 - **FR-004**: 系統 MUST 定義並滿足服務等級目標 (SLO): 至少 95% 的查詢請求在 3 秒內取得回應。對於外部 Provider 錯誤或異常情況，系統 MUST 在 3 秒內回應備援內容或友善錯誤訊息。
-- **FR-005**: 股價資料 MUST 透過至少兩個 Provider (TWSE API 為主、Yahoo Finance 為備援) 取得，並在主要來源失敗時自動 fallback
+- **FR-005**: 股價資料 MUST 透過至少兩個 Provider (TWSE API 為主、Yahoo Finance 為備援) 取得，並在主要來源失敗時自動 fallback；Yahoo Provider 必須先取得 crumb 與 cookie 並在有效期限內重複使用，以避免 401 錯誤
 - **FR-006**: 新聞資料 MUST 透過至少兩個 Provider (Google News RSS 為主、Yahoo RSS 為備援) 取得，並在主要來源失敗時自動 fallback
 - **FR-007**: 股價查詢結果 MUST 快取 45 秒，新聞查詢結果 MUST 快取 15 分鐘。當快取過期且所有 Provider 失敗時，系統 MUST 回應快取中的過期資料 (stale data) 並在背景嘗試更新，確保使用者立即獲得回應
 - **FR-008**: 系統 MUST 使用 Flex Message 格式呈現結構化資料 (股價、新聞)，提供卡片化視覺體驗。當 Flex Message 傳送失敗時，系統 MUST 記錄錯誤並回應「服務暫時無法使用，請稍後再試」
@@ -146,4 +146,8 @@ See `/specs/001-line-bot-commands/tasks.md` for the full task list, acceptance c
 ### Session 2025-11-15
 
 - Q: 當使用者輸入純數字後出現「無法識別的指令」提示時，快速按鈕是否要自動帶入該數字？ → A: 是，兩個快速按鈕都要帶入最後一次輸入的數字並組合成完整指令
+
+### Session 2025-11-18
+
+- Q: Yahoo fallback 401 mitigation策略？ → A: 保留原生 query1 endpoint，但必須實作 crumb + cookie 取得與快取流程，並在憑證失效前重複使用
 

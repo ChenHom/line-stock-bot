@@ -183,7 +183,7 @@ export function buildStatusFlex(title: string, message: string, type: 'info' | '
       backgroundColor: color.bg,
       contents: [
         { type: 'text', text: title, weight: 'bold', size: 'lg', color: color.text, wrap: true },
-        { type: 'text', text: message, size: 'sm', color: '#666', wrap: true, margin: 'md' }
+        { type: 'text', text: message, size: 'sm', color: '#666666', wrap: true, margin: 'md' }
       ]
     }
   }
