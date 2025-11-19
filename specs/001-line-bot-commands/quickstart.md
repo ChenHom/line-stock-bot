@@ -1,6 +1,6 @@
 # Quickstart: LINE 聊天機器人指令系統
 
-**Updated**: 2025-11-13 (Phase 1 completion)
+**Updated**: 2025-11-19 (Phase 1 refresh)
 
 **Prerequisites**: 
 - Node.js LTS (v18+)
@@ -8,6 +8,7 @@
 - Vercel account (for deployment)
 - Upstash Redis credentials ([upstash.com](https://upstash.com))
 - LINE Messaging API credentials ([developers.line.biz](https://developers.line.biz))
+- FinMind API token ([finmindtrade.com](https://finmindtrade.com/analysis/#/data/api))
 
 ## Environment Variables
 
@@ -18,9 +19,10 @@ Create `.env.local` file based on `.env.local.example`:
 - `LINE_CHANNEL_ACCESS_TOKEN` - LINE Channel access token for sending messages
 - `UPSTASH_REDIS_REST_URL` - Upstash Redis REST endpoint
 - `UPSTASH_REDIS_REST_TOKEN` - Upstash Redis REST token
+- `FINMIND_TOKEN` - FinMind API token used by the fallback quote provider
 
 ### Optional
-- `QUOTE_PRIMARY_PROVIDER` - Primary quote provider (`twse` | `yahoo`, default: `twse`)
+- `QUOTE_PRIMARY_PROVIDER` - Primary quote provider (`twse` | `finmind`, default: `twse`)
 - `NEWS_PRIMARY_PROVIDER` - Primary news provider (`google` | `yahoo`, default: `google`)
 - `PROVIDER_TIMEOUT_MS` - Timeout per provider attempt (default: `2000`)
 - `LOG_LEVEL` - Logging level (`debug` | `info` | `warn` | `error`, default: `info`)
@@ -133,11 +135,13 @@ pnpm vercel --prod
    - `LINE_CHANNEL_ACCESS_TOKEN`
    - `UPSTASH_REDIS_REST_URL`
    - `UPSTASH_REDIS_REST_TOKEN`
+   - `FINMIND_TOKEN`
 3. Optional variables:
    - `QUOTE_PRIMARY_PROVIDER=twse`
    - `NEWS_PRIMARY_PROVIDER=google`
    - `LOG_LEVEL=info`
    - `MONITORING_ENABLED=true`
+   - `PROVIDER_TIMEOUT_MS=2000`
 
 ### Update LINE Webhook URL
 After deployment, update LINE Developer Console:
@@ -184,9 +188,14 @@ After deployment, update LINE Developer Console:
 - System will degrade gracefully to direct API calls
 
 ### Provider Timeout
-- Check provider API status (TWSE, Yahoo, Google News)
+- Check provider API status (TWSE, FinMind, Google News)
 - Adjust `PROVIDER_TIMEOUT_MS` if needed (default: 2000ms)
 - Check Vercel function execution time limits
+
+### FinMind Token Errors
+- Ensure `FINMIND_TOKEN` is present locally and in Vercel Project Settings
+- Free tier is ~30 requests/min; rely on 45s quote cache so FinMind stays fallback-only
+- Monitor logs tagged `providerName: "finmind"` for 401/429 responses and rotate token if necessary
 
 ### Fuzzy Matching Not Working
 - Ensure stock name is in `lib/symbol.ts` mapping

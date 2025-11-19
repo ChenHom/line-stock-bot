@@ -1,6 +1,6 @@
 # Contract: Provider Functions (Internal)
 
-**Updated**: 2025-11-13 (Phase 1 completion)
+**Updated**: 2025-11-19 (Phase 1 refresh)
 
 These contracts describe the intended API for provider modules used by the feature.
 
@@ -10,7 +10,7 @@ These contracts describe the intended API for provider modules used by the featu
   - `options` - optional { requestId?, timeoutMs? }
 - **Behavior**: 
   - Attempts to fetch quote from configurable primary provider (default: TWSE, configurable via `QUOTE_PRIMARY_PROVIDER` env var)
-  - Falls back to secondary provider (Yahoo Rapid API) on error, timeout, or invalid schema
+  - Falls back to secondary provider (FinMind `TaiwanStockTick`) on error, timeout, invalid schema, or rate limiting
   - Validates response against `QuoteSchema` (Zod)
   - Logs provider attempts, failures, and fallback events with latency
 - **Output**: `Quote` as defined in `data-model.md`
@@ -73,10 +73,11 @@ These contracts describe the intended API for provider modules used by the featu
 ## Provider Configuration
 
 ### Environment Variables
-- `QUOTE_PRIMARY_PROVIDER` - Primary quote provider (`twse` | `yahoo`, default: `twse`)
+- `QUOTE_PRIMARY_PROVIDER` - Primary quote provider (`twse` | `finmind`, default: `twse`)
 - `NEWS_PRIMARY_PROVIDER` - Primary news provider (`google` | `yahoo`, default: `google`)
 - `PROVIDER_TIMEOUT_MS` - Timeout per provider attempt (default: `2000`)
 - `LOG_LEVEL` - Logging level (`debug` | `info` | `warn` | `error`, default: `info`)
+- `FINMIND_TOKEN` - Required API token for FinMind requests (set via environment / secret store)
 
 ### Provider Registry
 ```typescript
@@ -89,7 +90,7 @@ interface ProviderConfig {
 
 const quoteProviders: ProviderConfig[] = [
   { name: 'twse', fetchFn: fetchFromTWSE, timeoutMs: 2000 },
-  { name: 'yahoo-rapid', fetchFn: fetchFromYahooRapid, timeoutMs: 2000 }
+  { name: 'finmind', fetchFn: fetchFromFinMindTick, timeoutMs: 2000 }
 ]
 
 const newsProviders: ProviderConfig[] = [

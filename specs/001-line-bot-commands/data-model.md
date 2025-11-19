@@ -1,7 +1,7 @@
 # Data Model
 
 **Feature**: LINE 聊天機器人指令系統  
-**Updated**: 2025-11-13 (Phase 1 completion)
+**Updated**: 2025-11-19 (Phase 1 refresh)
 
 ## Core Entities
 
@@ -74,7 +74,7 @@ TTL Rules:
 - `message` (string) - human-readable log message
 - `requestId` (string, optional) - unique request identifier for tracing
 - `userId` (string, optional) - hashed LINE user ID
-- `providerName` (string, optional) - provider name (e.g., "twse", "yahoo-rapid")
+- `providerName` (string, optional) - provider name (e.g., `twse`, `finmind`, `google-rss`)
 - `latency` (number, optional) - operation latency in milliseconds
 - `details` (object, optional) - additional context data
 - `error` (string, optional) - error message

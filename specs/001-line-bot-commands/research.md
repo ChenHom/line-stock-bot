@@ -2,7 +2,7 @@
 
 **Feature**: LINE 聊天機器人指令系統  
 **Date**: 2025-11-13  
-**Updated**: 2025-11-15 (Phase 0 refresh)
+**Updated**: 2025-11-19 (Phase 0 refresh + FinMind integration)
 
 ## Summary
 
@@ -27,8 +27,8 @@ This research documents design choices and clarifies implementation details wher
 
 ## Question 4: Provider fallback order & behavior
 
-- Decision: Keep current fallback order: Yahoo → TWSE for quotes, Google News RSS → Yahoo RSS for news. Fallback should be triggered on fetch errors, invalid responses (per Zod), timeouts, and rate-limiting (416/403/429 as errors).
-- Rationale: Yahoo/Google have broader coverage; TWSE is authoritative for specific TW listings but may not cover all queries.
+- Decision: Quote providers use TWSE as the default primary and FinMind `TaiwanStockTick` as fallback (configurable via `QUOTE_PRIMARY_PROVIDER=twse|finmind`). News remains Google RSS primary → Yahoo RSS fallback. Fallback triggers on fetch errors, invalid payloads (Zod), timeouts, or known rate-limit/401 responses.
+- Rationale: TWSE is still the most authoritative/low-latency source; FinMind supplies near-real-time tick data plus historical depth without the Yahoo crumb/cookie friction experienced earlier.
 
 *Clarification update:* Provider order is configurable via environment variable `QUOTE_PRIMARY_PROVIDER` and defaults to `twse`. The fallback behavior is expected to be quick (switching to backup provider within ~1s where feasible) and always provide a reply to the user within 3s.
 
@@ -190,6 +190,7 @@ This research documents design choices and clarifies implementation details wher
 7. ✅ **Structured logging**: Enhanced custom logger with JSON output + metadata fields
 8. ✅ **Stale cache**: Stale-while-revalidate pattern for resilience
 9. ✅ **Quick reply auto-fill**: Message actions reuse the last numeric input without extra storage
+10. ✅ **FinMind fallback**: TWSE primary, FinMind `TaiwanStockTick` fallback with token auth
 
 ### Implementation Tasks
 1. Add Upstash wrapper (`lib/cache.ts`) with REST client and `setex`/`get` operations + stale-while-revalidate support
@@ -203,5 +204,16 @@ This research documents design choices and clarifies implementation details wher
 9. Build quick reply factory that injects the last numeric input into `查股價`/`看新聞` message actions for FR-013
 
 **Status**: All research questions resolved. Ready for Phase 1 (Design & Contracts).
+
+## Question 10: FinMind `TaiwanStockTick` usage details
+
+- Decision: Call `https://api.finmindtrade.com/api/v4/data` with `dataset=TaiwanStockTick`, `stock_id=<symbol>`, and `date=<YYYY-MM-DD>`; authenticate via `token` header/query string. Use the most recent tick as the fallback quote and derive `price`, `change`, `changePercent`, plus day-high/low by scanning ticks if TWSE unavailable.
+- Rationale: `TaiwanStockTick` exposes near-real-time trades (5-second cadence) and is explicitly designed for intraday snapshots. Endpoint requires only REST + token, works well inside serverless, and data columns map cleanly to our Quote schema.
+- Alternatives Considered: `TaiwanStockPrice` (daily close only, stale for intraday UX), `TaiwanStockInformation` (static metadata), RapidAPI Yahoo (crumb/cookie churn + 401 risk). FinMind best balances reliability + simplicity now that Yahoo is blocked.
+- Implementation Notes:
+  - Request example: `GET /api/v4/data?dataset=TaiwanStockTick&stock_id=2330&date=2025-11-19`
+  - Response columns: `ticker`, `tick_type`, `trade_price`, `trade_volume`, `trade_time`, `bid_price`, `ask_price`
+  - Rate limits: 30 requests/min by default token → throttle via cache (45s) + fallback only when TWSE fails
+  - Need to set `FINMIND_TOKEN` env var; log 401/429 separately for observability
 
 All items map to tasks T003 (caching), T004 (validation), T005 (withCache), and new tasks for fuzzy matching and logger enhancement as specified in `/specs/001-line-bot-commands/tasks.md`.
