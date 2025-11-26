@@ -16,7 +16,7 @@ const fmt = {
   chg: (x: number | undefined) =>
     typeof x === 'number' && Number.isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(2)}` : '-',
   time: (x: string | undefined) =>
-    (x ? new Date(x) : new Date()).toLocaleString('zh-TW', { hour12: false }),
+    (x ? new Date(x) : new Date()).toLocaleString('zh-TW', { hour12: false, timeZone: 'Asia/Taipei' }),
   trend: (x: number | undefined) =>
     (typeof x === 'number' && x < 0)
       ? { arrow: '▼', color: '#1976D2' }
