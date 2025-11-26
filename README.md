@@ -4,7 +4,7 @@ LINE 聊天機器人指令系統：實作 help、股價查詢、新聞查詢等�
 
 ## Features
 
-✅ **Stock Quotes** - Query Taiwan stock prices with automatic fallback (TWSE ↔ Yahoo Finance)
+✅ **Stock Quotes** - Query Taiwan stock prices with automatic fallback (TWSE → FinMind → Yahoo Finance)
 ✅ **Industry News** - Get industry news from RSS feeds (Google News ↔ Yahoo News)
 ✅ **Smart Symbol Resolution** - Support both stock codes (2330) and names (台積電)
 ✅ **Caching Layer** - Redis-backed caching with configurable TTL (45s for quotes, 15min for news)
@@ -41,9 +41,15 @@ LINE_CHANNEL_SECRET=your_channel_secret_here
 UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url_here
 UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token_here
 
+# FinMind API Configuration (Required for fallback quote provider)
+FINMIND_TOKEN=your_finmind_token_here
+
 # Optional Configuration
 DEBUG=False                       # Set to 'True' to skip signature verification in dev
-QUOTE_PRIMARY_PROVIDER=twse       # Primary quote provider: 'twse' or 'yahoo' (default: twse)
+QUOTE_PRIMARY_PROVIDER=twse       # Primary quote provider: 'twse' or 'finmind' (default: twse)
+NEWS_PRIMARY_PROVIDER=google      # Primary news provider: 'google' or 'yahoo' (default: google)
+PROVIDER_TIMEOUT_MS=2000          # Provider timeout in milliseconds (default: 2000)
+LOG_LEVEL=info                    # Logging level: debug, info, warn, error (default: info)
 MONITORING_ENABLED=false          # Enable metrics collection and logging
 ```
 
@@ -106,10 +112,12 @@ lib/
     withCache.ts       # Cache decorator
     quote/
       twse.ts          # TWSE data provider
+      finMind.ts       # FinMind data provider (TaiwanStockTick)
       yahooRapid.ts    # Yahoo Finance provider
     news/
       googleRss.ts     # Google News RSS provider
       yahooRss.ts      # Yahoo News RSS provider
+tests/                 # Unit and integration tests
 specs/                 # Feature specifications and documentation
 ```
 
@@ -127,8 +135,13 @@ specs/                 # Feature specifications and documentation
 
 Control quote data source priority via `QUOTE_PRIMARY_PROVIDER`:
 
-- `twse` (default) - Use TWSE as primary, Yahoo as fallback
-- `yahoo` - Use Yahoo as primary, TWSE as fallback
+- `twse` (default) - Use TWSE as primary, FinMind/Yahoo as fallback
+- `finmind` - Use FinMind as primary, TWSE/Yahoo as fallback
+
+Control news data source priority via `NEWS_PRIMARY_PROVIDER`:
+
+- `google` (default) - Use Google News RSS as primary
+- `yahoo` - Use Yahoo News RSS as primary
 
 ### Cache TTL
 
@@ -154,17 +167,50 @@ Enable monitoring with `MONITORING_ENABLED=true`. Metrics include:
 ### Type Checking
 
 ```bash
-pnpm exec tsc --noEmit
+pnpm run lint
 ```
 
 ### Testing
 
-Tests are planned for Phase 4 (T010-T013). Test coverage will include:
+```bash
+# Run all tests
+pnpm test
 
-- Unit tests for providers and validation
-- Integration tests for webhook handling
-- Cache behavior tests
-- Load/performance tests
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with coverage
+pnpm test:coverage
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Webhook Signature Verification Failed**
+- Ensure `LINE_CHANNEL_SECRET` is correctly set
+- Check that the webhook URL is using HTTPS
+- Verify the `x-line-signature` header is present
+
+**Cache Connection Errors**
+- Verify `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are correct
+- Check Upstash Redis instance is active
+- System will degrade gracefully to direct API calls
+
+**Provider Timeout**
+- Check provider API status (TWSE, FinMind, Google News)
+- Adjust `PROVIDER_TIMEOUT_MS` if needed (default: 2000ms)
+- Check Vercel function execution time limits
+
+**FinMind Token Errors**
+- Ensure `FINMIND_TOKEN` is present in environment variables
+- Free tier is ~30 requests/min; rely on 45s quote cache to stay within limits
+- Monitor logs tagged `providerName: "finmind"` for 401/429 responses
+
+**Fuzzy Matching Not Working**
+- Ensure the stock name is in the dictionary (see `lib/symbol.ts`)
+- Check that confidence threshold (80%) is met
+- Try using the exact stock code instead
 
 ## Security
 

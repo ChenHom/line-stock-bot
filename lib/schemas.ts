@@ -56,3 +56,33 @@ export const ProviderEventSchema = z.object({
 })
 
 export type ProviderEvent = z.infer<typeof ProviderEventSchema>
+
+/**
+ * FuzzyMatchResult schema for symbol resolution
+ */
+export const FuzzyMatchResultSchema = z.object({
+  symbol: z.string().min(1),
+  name: z.string().min(1),
+  confidence: z.number().min(0).max(100),
+  score: z.number().min(0).max(1).optional()
+})
+
+export type FuzzyMatchResult = z.infer<typeof FuzzyMatchResultSchema>
+
+/**
+ * LogEntry schema for structured logging
+ */
+export const LogEntrySchema = z.object({
+  timestamp: z.string().datetime(),
+  level: z.enum(['debug', 'info', 'warn', 'error']),
+  message: z.string().min(1),
+  requestId: z.string().optional(),
+  userId: z.string().optional(),
+  providerName: z.string().optional(),
+  latency: z.number().nonnegative().optional(),
+  details: z.record(z.string(), z.any()).optional(),
+  error: z.string().optional(),
+  stack: z.string().optional()
+})
+
+export type LogEntry = z.infer<typeof LogEntrySchema>

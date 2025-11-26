@@ -4,288 +4,209 @@ description: "Task list for implementing LINE bot commands and required infra ad
 
 # Tasks: LINE 聊天機器人指令系統
 
-**Feature Branch**: `001-line-bot-commands`  
-**Generated**: 2025-11-14  
-**Input**: Design documents from `spec.md`, `plan.md`, `data-model.md`, `contracts/`
+**Feature Branch**: `001-line-bot-commands`
+**Generated**: 2025-11-19
+**Updated**: 2025-11-26
+**Input**: Design documents from `specs/001-line-bot-commands/plan.md`, `specs/001-line-bot-commands/spec.md`, `specs/001-line-bot-commands/data-model.md`, `specs/001-line-bot-commands/contracts/`
 
-**Total Tasks**: 42  
-**Completion**: 18/42 (42.9%)
+**Total Tasks**: 42
+**Completion**: 32/42
 
 ---
 
 ## Implementation Strategy
 
 **MVP Scope** (User Story 1 only):
-- Stock quote query by symbol/name
-- Fuzzy matching for company names
-- Provider fallback (TWSE → Yahoo)
-- Cache with 45s TTL
-- Flex Message display
+- Stock quote query by symbol/name (MVP)
+- Fuzzy matching for company names (Fuse.js)
+- Provider fallback (TWSE -> FinMind / Yahoo as needed)
+- Cache with 45s TTL for quotes and 15min for news
+- Flex Message display for responses
 
 **Incremental Delivery Order**:
 1. Phase 1-2: Setup & Foundation (blocking)
-2. Phase 3: User Story 1 (MVP) - Stock quote query
-3. Phase 4: User Story 2 - News query
-4. Phase 5: User Story 3 - Help command
-5. Phase 6: Polish & observability
+2. Phase 3 (US1) - Stock quote query (MVP)
+3. Phase 4 (US2) - News query
+4. Phase 5 (US3) - Help command
+5. Phase 6 - Polish & observability
 
 ---
 
-## Phase 1: Setup & Infrastructure (Blocking)
+## Phase 1: Setup & Infrastructure (Blocking) ✅
 
-**Goal**: Initialize project dependencies, environment configuration, and core utilities.
+**Goal**: Initialize project dependencies, environment configuration, and core utilities in repo.
 
 **Independent Test**: Run `pnpm install` and `pnpm test` successfully with no errors.
 
 ### Tasks
 
-- [X] T001 Fix webhook signature verification logic in api/line/webhook.ts
-- [X] T002 Add Upstash Redis dependency and update .env.local.example with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
-- [ ] T003 Install Fuse.js for fuzzy matching in package.json
+- [X] T001 [P] Update LINE webhook signature verification at `api/line/webhook.ts`
+- [X] T002 Add Upstash Redis dependency and update `package.json` & `.env.local.example` (add `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) - file paths: `package.json`, `.env.local.example`
+- [X] T003 [P] Install Fuse.js for fuzzy matching by adding dependency to `package.json` and `pnpm-lock.yaml` - file path: `package.json`
+- [X] T004 [P] Confirm and add environment variable docs to `specs/001-line-bot-commands/quickstart.md` and `.env.local.example` - file paths: `specs/001-line-bot-commands/quickstart.md`, `.env.local.example`
 
-**Parallel Opportunities**: T001, T002, T003 can be executed in parallel (different files, no dependencies).
+**Parallel Opportunities**: T001, T002, T003, T004 can be executed in parallel (different files, no blocking).
 
 ---
 
-## Phase 2: Foundational Layer (Blocking)
+## Phase 2: Foundational Layer (Blocking) ✅
 
-**Goal**: Implement core infrastructure required by all user stories (caching, logging, validation, provider framework).
+**Goal**: Implement core infra required by all user stories (caching, logging, validation, provider framework).
 
-**Independent Test**: Run unit tests for cache, logger, schemas, and provider framework - all pass.
+**Independent Test**: Run unit tests for cache, logger, schemas, and provider framework successfully.
 
 ### Tasks
 
-- [X] T004 Create lib/schemas.ts with Zod schemas for Quote, NewsItem, FuzzyMatchResult, LogEntry
-- [X] T005 Implement lib/cache.ts with Upstash Redis wrapper supporting getWithStale pattern
-- [X] T006 Create lib/providers/withCache.ts implementing cache HOC with TTL and stale-while-revalidate logic
-- [X] T007 Enhance lib/logger.ts with structured JSON logging including requestId, userId, providerName, latency fields
-- [ ] T008 Implement lib/providers/index.ts with sequential fallback strategy and timeout handling
-- [ ] T009 Add environment variable support for QUOTE_PRIMARY_PROVIDER and NEWS_PRIMARY_PROVIDER in lib/providers/index.ts
+- [X] T005 Create `lib/schemas.ts` with Zod schemas for Quote, NewsItem, FuzzyMatchResult, LogEntry - file path: `lib/schemas.ts`
+- [X] T006 Implement Upstash Redis wrapper with stale-while-revalidate in `lib/cache.ts` (get/set/ttl, and getWithStale helper) - file path: `lib/cache.ts`
+- [X] T007 [P] Implement `lib/providers/withCache.ts` wrapper using `lib/cache.ts` and TTLs (quote:45s news:900s) - file path: `lib/providers/withCache.ts`
+- [X] T008 Enhance `lib/logger.ts` with structured JSON logging fields (timestamp, level, requestId, userId, providerName, latency) - file path: `lib/logger.ts`
+- [X] T009 Implement provider orchestration and fallback in `lib/providers/index.ts` with configurable env (`QUOTE_PRIMARY_PROVIDER`, `NEWS_PRIMARY_PROVIDER`, `PROVIDER_TIMEOUT_MS`) - file path: `lib/providers/index.ts`
+- [X] T010 [P] Add env parsing/configuration support in `lib/providers/index.ts` and `api/line/webhook.ts` for provider selection - file paths: `lib/providers/index.ts`, `api/line/webhook.ts`
 
-**Parallel Opportunities**: T004, T005, T007 can be executed in parallel. T006 depends on T005. T008-T009 depend on T004-T007.
+**Dependencies**: T005 → T007 & T009 depend on T005. T006 is independent and should finish before T007.
 
----
-
-## Phase 3: User Story 1 - 查詢台股即時行情 (Priority: P1) 🎯 MVP
-
-**Story Goal**: 使用者可透過股票代號或名稱查詢即時股價，系統使用 Flex Message 呈現行情卡片，支援 Provider fallback 與快取。
-
-**Independent Test**: 
-1. 發送「股價 2330」→ 3秒內收到台積電股價 Flex Message 卡片
-2. 發送「股價 台積電」→ 模糊比對識別，回應股價卡片
-3. 主要 Provider 失敗 → 自動切換備援，3秒內回應
-4. 45秒內重複查詢 → 從快取讀取，<1秒回應
-
-### Tasks
-
-- [ ] T010 [P] [US1] Implement lib/symbol.ts with Fuse.js fuzzy matcher for stock name resolution (80% confidence threshold)
-- [ ] T011 [P] [US1] Create lib/providers/quote/twse.ts implementing TWSE API provider with Zod validation
-- [ ] T012 [P] [US1] Create lib/providers/quote/yahooRapid.ts implementing Yahoo Finance provider with Zod validation
-- [ ] T013 [US1] Implement getQuoteWithFallback in lib/providers/index.ts with configurable provider order and timeout
-- [ ] T014 [US1] Integrate quote providers with withCache wrapper (45s TTL) in lib/providers/index.ts
-- [ ] T015 [P] [US1] Create Flex Message template for stock quote display in lib/flex.ts (createStockQuoteMessage)
-- [ ] T016 [US1] Implement stock quote command handler in api/line/webhook.ts (parse「股價」command, resolve symbol, fetch quote, reply with Flex Message)
-- [ ] T017 [US1] Add error handling for invalid stock symbols and low-confidence fuzzy matches in api/line/webhook.ts
-- [ ] T018 [US1] Add stale cache handling with warning message「資料可能稍有延遲」in api/line/webhook.ts
-
-**Dependencies**: Requires Phase 1-2 completion.
-
-**Parallel Opportunities**: T010, T011, T012, T015 can be executed in parallel. T013-T014 depend on T011-T012. T016-T018 depend on T013-T015.
-
-**Acceptance Criteria**:
-- ✅ `股價 2330` returns TSMC quote Flex Message in <3s
-- ✅ `股價 台積電` uses fuzzy matching and returns quote if confidence >80%
-- ✅ `股價 電子` (low confidence) returns「找到多筆相似結果，請使用更精確的名稱或股票代號」
-- ✅ TWSE failure → automatic fallback to Yahoo within 1s
-- ✅ Repeated query within 45s → cache hit, response <1s
-- ✅ All providers fail + stale cache exists → returns stale data with warning
-- ✅ All providers fail + no cache → returns「目前無法取得資料，請稍後再試」
+**Parallel Opportunities**: T005, T006, T008 can be implemented in parallel.
 
 ---
 
-## Phase 4: User Story 2 - 查詢產業新聞 (Priority: P2)
+## Phase 3: User Story 1 - 查詢台股即時行情 (Priority: P1) 🎯 MVP ✅
 
-**Story Goal**: 使用者可透過關鍵字查詢相關產業新聞，系統回應3-5則新聞卡片，支援 Provider fallback 與15分鐘快取。
+**Story Goal**: 使用者可輸入股票代號/名稱查詢即時股價；系統使用 Flex Message 呈現行情卡片，支援 Provider fallback、快取與模糊比對。
 
 **Independent Test**:
-1. 發送「新聞 台積電」→ 收到3-5則相關新聞 Flex Message 卡片
-2. 發送「新聞 半導體」→ 收到半導體產業新聞
-3. 主要 Provider 失敗 → 自動切換備援，3秒內回應
-4. 15分鐘內重複查詢 → 從快取讀取
+1. 發送 `股價 2330` → 在 3 秒內收到包含現價/漲跌/成交量的 Flex Message 卡片
+2. 發送 `股價 台積電` → 模糊比對識別且信心分數 >80%，回傳股價卡片
+3. 主要 Provider (TWSE) 失敗 → 自動切換 FinMind / fallback，並於 3 秒內回應
+4. 45 秒內重複查詢同一股票 → 從快取讀取 (< 1s 回應)
 
-### Tasks
+### Implementation Tasks (Tests optional - add if requested by devs)
 
-- [X] T019 [P] [US2] Create lib/providers/news/googleRss.ts implementing Google News RSS provider with Zod validation
-- [X] T020 [P] [US2] Create lib/providers/news/yahooRss.ts implementing Yahoo RSS provider with Zod validation
-- [X] T021 [US2] Implement getIndustryNews in lib/providers/index.ts with fallback logic and limit parameter
-- [X] T022 [US2] Integrate news providers with withCache wrapper (900s / 15min TTL) in lib/providers/index.ts
-- [X] T023 [P] [US2] Create Flex Message template for news list display in lib/flex.ts (createNewsListMessage)
-- [X] T024 [US2] Implement news query command handler in api/line/webhook.ts (parse「新聞」command, fetch news, reply with Flex Message)
-- [X] T025 [US2] Add handling for overly broad keywords with suggestion message in api/line/webhook.ts
+- [X] T011 [P] [US1] Implement Fuse.js-based fuzzy matcher, `lib/symbol.ts` with 80% confidence threshold and tests in `tests/unit/symbol.test.ts` - file paths: `lib/symbol.ts`, `tests/unit/symbol.test.ts`
+- [X] T012 [P] [US1] Implement TWSE provider at `lib/providers/quote/twse.ts` with Zod validation using `lib/schemas.ts` - file path: `lib/providers/quote/twse.ts`
+- [X] T013 [P] [US1] Implement FinMind provider at `lib/providers/quote/finMind.ts` with token auth + Zod validation - file path: `lib/providers/quote/finMind.ts`
+- [X] T014 [US1] Implement `getQuoteWithFallback(symbol, options?)` in `lib/providers/index.ts` using sequential fallback (TWSE → FinMind) + `withCache` wrapper (45s TTL) - file path: `lib/providers/index.ts`
+- [X] T015 [P] [US1] Create stock quote Flex Message template `createStockQuoteMessage` in `lib/flex.ts` (include quick reply variation) - file path: `lib/flex.ts`
+- [X] T016 [US1] Implement webhook handler for `股價` command in `api/line/webhook.ts` including parsing, `resolveSymbol`, `getQuoteWithFallback` and reply with `createStockQuoteMessage` - file path: `api/line/webhook.ts`
+- [X] T017 [US1] Add error handling for invalid symbol and low-confidence fuzzy matches in `api/line/webhook.ts` (provide helpful messages and quick replies) - file path: `api/line/webhook.ts`
+- [X] T018 [US1] Add stale cache handling and stale notice (「資料可能稍有延遲」) in `api/line/webhook.ts` and include tests in `tests/integration/webhook.test.ts` - file paths: `api/line/webhook.ts`, `tests/integration/webhook.test.ts`
 
-**Dependencies**: Requires Phase 1-2 completion. Can be developed in parallel with Phase 3.
+**Dependencies**: Phase 2 must be complete before these tasks.
 
-**Parallel Opportunities**: T019, T020, T023 can be executed in parallel. T021-T022 depend on T019-T020. T024-T025 depend on T021-T023.
+**Parallel Opportunities**: T011, T012, T013, T015 can be done in parallel. T014 depends on T012/T013; T016/T017/T018 depend on T014 & T015.
 
 **Acceptance Criteria**:
-- ✅ `新聞 台積電` returns 3-5 relevant news items with title, source, time, link
-- ✅ `新聞 半導體` returns semiconductor industry news
-- ✅ Google RSS failure → automatic fallback to Yahoo RSS
-- ✅ Repeated query within 15min → cache hit
-- ✅ Broad keyword like `新聞 股票` → returns generic financial news or suggestion
-- ✅ All providers fail + stale cache → returns stale news with warning
-- ✅ All providers fail + no cache → returns error message
+- `股價 2330` returns quote within 3 seconds using TWSE or FinMind fallback
+- `股價 台積電` returns quote via fuzzy match when confidence >= 80%
+- Cache TTL & stale behavior functions as described
+- Fallback occurs and is logged
 
 ---
 
-## Phase 5: User Story 3 - 查詢使用說明 (Priority: P3)
+## Phase 4: User Story 2 - 查詢產業新聞 (Priority: P2) ✅
 
-**Story Goal**: 使用者可查詢所有可用指令的說明與範例，包含「help」與「幫助」別名支援。
+**Story Goal**: 使用者可輸入關鍵字查詢相關新聞（公司或產業），回傳 3-5 則新聞卡片，支援 Provider fallback 與 15 分鐘快取。
 
 **Independent Test**:
-1. 發送「help」→ 收到指令說明 Flex Message
-2. 發送「幫助」→ 收到相同說明
-3. 發送「test123」(無效指令) → 收到「無法識別的指令，請輸入 help 查看使用說明」
+1. 發送 `新聞 台積電` → 回應 3-5 則新聞的 Flex Message 卡片
+2. 發送 `新聞 半導體` → 回應該產業的新聞
+3. Google News RSS 失敗 → 自動 fallback 至 Yahoo RSS
+4. 15 分鐘內重複查詢 → 從快取讀取
 
 ### Tasks
 
-- [X] T026 [P] [US3] Create Flex Message template for help command in lib/flex.ts (createHelpMessage)
-- [X] T027 [US3] Implement help command handler with alias support (help/幫助) in api/line/webhook.ts
-- [X] T028 [US3] Implement unknown command handler with help suggestion in api/line/webhook.ts
-- [X] T029 [P] [US3] Build quick reply factory in lib/flex.ts that injects numeric-only input into 查股價/看新聞 messageAction payloads per FR-013
-- [X] T030 [US3] Enhance unknown command pipeline in api/line/webhook.ts to detect numeric-only input, log sourceInput, and attach FR-013 quick reply actions before sending help Flex
+- [X] T019 [P] [US2] Implement `lib/providers/news/googleRss.ts` with Zod validation and tests in `tests/unit/providers/news.test.ts` - file paths: `lib/providers/news/googleRss.ts`, `tests/unit/providers/news.test.ts`
+- [X] T020 [P] [US2] Implement `lib/providers/news/yahooRss.ts` with Zod validation - file path: `lib/providers/news/yahooRss.ts`
+- [X] T021 [US2] Implement `getIndustryNews(keyword, limit=5)` in `lib/providers/index.ts` with fallback behavior and `withCache` (900s TTL) - file path: `lib/providers/index.ts`
+- [X] T022 [US2] Create news list Flex Message template `createNewsListMessage` in `lib/flex.ts` and add unit tests `tests/unit/flex.test.ts` - file paths: `lib/flex.ts`, `tests/unit/flex.test.ts`
+- [X] T023 [US2] Implement `新聞` command handler in `api/line/webhook.ts` (parse keyword, call `getIndustryNews`, reply with `createNewsListMessage`) - file path: `api/line/webhook.ts`
+- [X] T024 [US2] Add handling for overly broad keywords and return generic financial news or suggestion in `api/line/webhook.ts` - file path: `api/line/webhook.ts`
 
-**Dependencies**: Requires Phase 1-2 completion. Can be developed in parallel with Phase 3-4.
+**Parallel Opportunities**: T019, T020, T022 can be done in parallel; T021 depends on T019/T020.
 
-**Parallel Opportunities**: T026, T027, T028 can be executed in parallel (minimal dependencies).
+**Acceptance Criteria**: As per spec - 3-5 relevant items, fallback behavior, cache usage.
+
+---
+
+## Phase 5: User Story 3 - 查詢使用說明 (Priority: P3) ✅
+
+**Story Goal**: 使用者可透過 `help`/`幫助` 查詢所有可用指令的說明與使用範例；當收到無法識別的指令時，系統建議`help`且提供快速按鈕自動填充數字輸入。
+
+**Independent Test**: Send `help` and verify response; send `test123` and verify help suggestion with quick reply buttons.
+
+### Tasks
+
+- [X] T025 [P] [US3] Implement `createHelpMessage` in `lib/flex.ts` and add unit tests in `tests/unit/flex.test.ts` - file paths: `lib/flex.ts`, `tests/unit/flex.test.ts`
+- [X] T026 [US3] Implement `help`/`幫助` handler in `api/line/webhook.ts` and ensure both aliases return the same Flex Message - file path: `api/line/webhook.ts`
+- [X] T027 [US3] Implement unknown command handler in `api/line/webhook.ts` to detect numeric-only input and attach FR-013 quick replies - file path: `api/line/webhook.ts`
+- [X] T028 [P] [US3] Implement quick reply factory that injects numeric-only input into quick reply messageAction payloads in `lib/flex.ts` - file path: `lib/flex.ts`
 
 **Acceptance Criteria**:
-- ✅ `help` returns Flex Message with all command descriptions and examples
-- ✅ `幫助` returns same help message
-- ✅ Unknown command returns friendly error with help suggestion
-- ✅ Numeric-only input fallback exposes quick reply buttons that auto-populate the last digits for「股價」與「新聞」指令
-- ✅ Help message includes: 股價 <代號>, 新聞 <關鍵字>, help
+- `help` returns informative Flex Message with `股價 <代號>`, `新聞 <關鍵字>`, `help` examples
+- Unknown commands provide `help` suggestion and quick replies auto-populated with numeric input
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Goal**: Complete testing, documentation, monitoring, and production readiness.
+**Goal**: Finalize tests, docs, monitoring, performance, and production readiness.
 
 ### Tasks
 
-- [ ] T031 [P] Add unit tests for fuzzy matching in tests/unit/symbol.test.ts
-- [ ] T032 [P] Add unit tests for Flex Message templates and quick reply factory in tests/unit/flex.test.ts
-- [ ] T033 [P] Add integration test for end-to-end stock query flow in tests/integration/webhook.test.ts
-- [ ] T034 [P] Add integration test for news query flow in tests/integration/webhook.test.ts
-- [ ] T035 Add performance test script simulating 100 concurrent users in scripts/load-test.ts
-- [ ] T036 [P] Update README.md with setup, deployment, and troubleshooting guide
-- [ ] T037 [P] Add CI/CD configuration for automated testing in .github/workflows/test.yml
-- [ ] T038 Add monitoring dashboard configuration for cache hit rate and provider fallback metrics
-- [ ] T039 Add alert rules for SLO violations (>5% requests >3s) and high fallback rates
-- [ ] T040 Add fallback latency tests verifying <1s provider switch in tests/integration/fallback.test.ts
-- [ ] T041 Implement Flex Message send failure handling with error logging in api/line/webhook.ts
-- [ ] T042 Add comprehensive error messages for all edge cases per spec in api/line/webhook.ts
-
-**Parallel Opportunities**: Most tasks in this phase can be executed in parallel except dependencies: T033-T034 depend on Phase 3-4 completion. T035 depends on T033-T034.
-
----
-
-## Dependency Graph
-
-```
-Phase 1 (Setup)
-  ├─> Phase 2 (Foundation) ─┬─> Phase 3 (US1 - Stock Quote) ─┐
-  │                         ├─> Phase 4 (US2 - News)         ─┤─> Phase 6 (Polish)
-  │                         └─> Phase 5 (US3 - Help)         ─┘
-```
-
-**Critical Path**: Phase 1 → Phase 2 → Phase 3 (MVP)
-
-**User Story Independence**:
-- US1, US2, US3 can be developed in parallel after Phase 2 completion
-- Each story has independent test criteria and can ship separately
-- Recommended order: US1 (MVP) → US3 (quick win) → US2 (complex)
+- [X] T029 [P] Add unit tests for fuzzy matching & symbol resolution in `tests/unit/symbol.test.ts` - file path: `tests/unit/symbol.test.ts`
+- [X] T030 [P] Add unit tests for Flex Message templates in `tests/unit/flex.test.ts` - file path: `tests/unit/flex.test.ts`
+- [X] T031 [P] Add integration test for end-to-end stock quote flow in `tests/integration/webhook.test.ts` - file path: `tests/integration/webhook.test.ts`
+- [X] T032 [P] Add integration test for news query flow in `tests/integration/webhook.test.ts` - file path: `tests/integration/webhook.test.ts`
+- [ ] T033 Implement performance/load test script to simulate 100 concurrent users at `scripts/load-test.ts` and document run steps in `specs/001-line-bot-commands/quickstart.md` - file paths: `scripts/load-test.ts`, `specs/001-line-bot-commands/quickstart.md`
+- [X] T034 [P] Update `README.md` with setup, deployment, and troubleshooting sections relevant to this feature - file path: `README.md`
+- [X] T035 [P] Add CI workflow to run unit & integration tests in `.github/workflows/test.yml` - file path: `.github/workflows/test.yml`
+- [ ] T036 Add monitoring dashboard configuration for provider fallback and cache hit ratio in `lib/monitoring.ts` and `specs/001-line-bot-commands/plan.md` - file paths: `lib/monitoring.ts`, `specs/001-line-bot-commands/plan.md`
+- [ ] T037 Add alert rules for SLO violations later in ops docs in `specs/001-line-bot-commands/checklists/requirements.md` - file path: `specs/001-line-bot-commands/checklists/requirements.md`
+- [X] T038 [P] Implement Flex Message send failure handling and retry/error logging in `api/line/webhook.ts` - file path: `api/line/webhook.ts`
+- [X] T039 [P] Add comprehensive error messages for all edge cases per spec in `api/line/webhook.ts` - file path: `api/line/webhook.ts`
+- [ ] T040 Add tests for provider fallback latency tracing and <1s fallback expectation in `tests/integration/fallback.test.ts` - file path: `tests/integration/fallback.test.ts`
+- [ ] T041 Add SLO validation script or CI step to verify that 95% of requests respond in <3s under test load at `scripts/slo-test.ts` - file path: `scripts/slo-test.ts`
+- [ ] T042 [P] Final docs & cross-check: Validate `specs/001-line-bot-commands/quickstart.md`, `plan.md`, `README.md` and `spec.md` alignment - file paths: `specs/001-line-bot-commands/quickstart.md`, `specs/001-line-bot-commands/plan.md`, `README.md`, `specs/001-line-bot-commands/spec.md`
 
 ---
 
-## Parallel Execution Examples
+## Dependencies & Execution Order
 
-### Phase 2 (Foundation) Parallel Work
-```
-Developer A: T004 (schemas) + T007 (logger)
-Developer B: T005 (cache) → T006 (withCache)
-Developer C: T008 (provider framework) → T009 (config)
-```
+**Phase Dependencies**:
+- Setup (Phase 1) → Foundation (Phase 2) → User Stories (Phase 3/4/5) → Polish (Phase 6)
 
-### Phase 3 (US1) Parallel Work
-```
-Developer A: T010 (fuzzy matcher) + T015 (Flex template)
-Developer B: T011 (TWSE provider)
-Developer C: T012 (Yahoo provider)
-→ Merge → T013-T014 (integration)
-→ T016-T018 (webhook handlers)
-```
+**User Story Dependencies**:
+- US1 (P1): Depends on Phase 1 & 2
+- US2 (P2): Depends on Phase 1 & 2 (can run in parallel with US1)
+- US3 (P3): Depends on Phase 1 & 2 (can run in parallel with US1/US2)
 
-### Phase 4 (US2) Parallel Work
-```
-Developer A: T019 (Google RSS) + T023 (Flex template)
-Developer B: T020 (Yahoo RSS)
-→ Merge → T021-T022 (integration)
-→ T024-T025 (webhook handlers)
-```
+**Implementation Strategy**: MVP-first (complete US1, validate, and deploy), then add US3 (help), then US2 (news), then polish and tests.
 
 ---
 
-## Testing Strategy
+## Summary Report
 
-**Unit Tests** (Required for Phase 2-5):
-- `tests/unit/symbol.test.ts` - Fuzzy matching logic
-- `tests/unit/providers/*.test.ts` - Provider validation, fallback, caching
-- `tests/unit/flex.test.ts` - Flex Message templates
-- `tests/unit/logger.test.ts` - Structured logging
-
-**Integration Tests** (Required for Phase 3-5):
-- `tests/integration/webhook.test.ts` - End-to-end command flows
-- `tests/integration/cache.test.ts` - Cache behavior with Redis
-- `tests/integration/fallback.test.ts` - Provider fallback scenarios
-
-**Performance Tests** (Phase 6):
-- `scripts/load-test.ts` - 100 concurrent users simulation
-- SLO validation: 95% requests <3s, cache hit >80%
+- Total tasks generated: 42
+- Tasks per story:
+  - Phase 1: 4 ✅
+  - Phase 2: 6 ✅
+  - US1 (Phase 3): 8 ✅
+  - US2 (Phase 4): 6 ✅
+  - US3 (Phase 5): 4 ✅
+  - Phase 6 (Polish): 14 (in progress)
+- Parallel opportunities identified: many [P] tasks (Fmt: `- [ ] Txxx [P] ...`)
+- Independent test criteria per story: Provided in each story's phase section above.
+- Suggested MVP: US1 (股價 queries) only; then ship incrementally
 
 ---
 
-## Success Metrics
+## Format Validation (Checklist Enforcement)
 
-**Phase 3 (MVP) Exit Criteria**:
-- ✅ All US1 acceptance scenarios pass
-- ✅ Unit test coverage >80% for quote providers
-- ✅ Integration tests pass for stock query flow
-- ✅ Manual testing: 股價 2330, 股價 台積電, fallback scenario
-- ✅ Performance: <3s response for 95% requests
-
-**Phase 4-5 Exit Criteria**:
-- ✅ All US2 and US3 acceptance scenarios pass
-- ✅ Full integration test suite passes
-- ✅ Documentation updated
-
-**Phase 6 Exit Criteria**:
-- ✅ Load test passes (100 concurrent users)
-- ✅ CI/CD pipeline configured and passing
-- ✅ Monitoring dashboard operational
-- ✅ All edge cases handled per spec
-
----
-
-## Notes
-
-- **Priority markers**: [P] = Parallelizable task (independent file/module)
-- **Story markers**: [US1]/[US2]/[US3] = Maps to user story from spec.md
-- **Task IDs**: Sequential execution order (T001→T002→...)
-- **File paths**: All paths are absolute from repository root
-- **Testing**: Unit tests created alongside implementation (TDD approach)
-- **MVP**: Phase 3 (US1) represents minimum viable product
-- **Incremental delivery**: Each user story phase is independently deployable
+All tasks in this document follow the required checklist format:
+- Begin with `- [ ]` or `- [X]`
+- Include sequential Task ID
+- Include optional `[P]` markers (parallelizable)
+- Include `[USx]` labels for tasks in user story phases
+- Include concrete file paths for every task
 
 
