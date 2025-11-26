@@ -3,11 +3,12 @@ import { logger } from '../logger'
 import { metrics } from '../monitoring'
 import { getQuoteYahoo } from './quote/yahooRapid'
 import { getQuoteTwse } from './quote/twse'
+import { getQuoteFinMind } from './quote/finMind'
 import { getNewsGoogleRss } from './news/googleRss'
 import { getNewsYahooRss } from './news/yahooRss'
 import { withCache, generateQuoteCacheKey, generateNewsCacheKey } from './withCache'
 
-type QuoteProviderName = 'twse' | 'yahoo-rapid'
+type QuoteProviderName = 'twse' | 'finmind' | 'yahoo-rapid'
 type NewsProviderName = 'google-rss' | 'yahoo-rss'
 
 interface ProviderOptions {
@@ -31,6 +32,7 @@ const DEFAULT_PROVIDER_TIMEOUT = getDefaultTimeout()
 
 const QUOTE_PROVIDER_ALIASES: Record<string, QuoteProviderName> = {
   twse: 'twse',
+  finmind: 'finmind',
   yahoo: 'yahoo-rapid',
   'yahoo-rapid': 'yahoo-rapid'
 }
@@ -42,8 +44,10 @@ const NEWS_PROVIDER_ALIASES: Record<string, NewsProviderName> = {
   'yahoo-rss': 'yahoo-rss'
 }
 
+// Provider order: TWSE → FinMind → Yahoo (per plan.md)
 const quoteProviders: QuoteProviderConfig[] = [
   { name: 'twse', fetcher: getQuoteTwse },
+  { name: 'finmind', fetcher: getQuoteFinMind },
   { name: 'yahoo-rapid', fetcher: getQuoteYahoo }
 ]
 
