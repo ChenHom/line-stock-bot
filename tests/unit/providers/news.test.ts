@@ -18,12 +18,14 @@ describe('News Providers', () => {
               <link>https://example.com/news/1</link>
               <source>經濟日報</source>
               <pubDate>Mon, 13 Nov 2023 10:00:00 GMT</pubDate>
+              <media:content url="https://example.com/image1.jpg" medium="image" />
             </item>
             <item>
               <title>半導體產業展望</title>
               <link>https://example.com/news/2</link>
               <source>工商時報</source>
               <pubDate>Mon, 13 Nov 2023 09:00:00 GMT</pubDate>
+              <description><![CDATA[<img src="https://example.com/image2.jpg" /> Some description]]></description>
             </item>
           </channel>
         </rss>`
@@ -42,6 +44,8 @@ describe('News Providers', () => {
       expect(result[0].url).toBe('https://example.com/news/1')
       expect(result[0].source).toBe('經濟日報')
       expect(result[0].publishedAt).toBeDefined()
+      expect(result[0].imageUrl).toBe('https://example.com/image1.jpg')
+      expect(result[1].imageUrl).toBe('https://example.com/image2.jpg')
     })
 
     it('should limit results to specified limit', async () => {

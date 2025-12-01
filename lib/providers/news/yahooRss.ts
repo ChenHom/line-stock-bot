@@ -1,5 +1,5 @@
 import { NewsItem } from '../../schemas'
-import { buildNewsList, extractItemBlocks, extractTag, normalizeUrl, parsePublishedDate, sanitizeText } from './rssUtils'
+import { buildNewsList, extractAttribute, extractItemBlocks, extractTag, normalizeUrl, parsePublishedDate, sanitizeText } from './rssUtils'
 
 const REQUEST_HEADERS = {
   'User-Agent': 'line-stock-bot/1.0 (+https://github.com/ChenHom/line-stock-bot)'
@@ -23,12 +23,23 @@ export async function getNewsYahooRss(keyword: string, limit = 5): Promise<NewsI
       return null
     }
 
+    let imageUrl = extractAttribute(block, 'media:content', 'url')
+    if (!imageUrl) {
+      const description = extractTag(block, 'description')
+      if (description) {
+        const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/)
+        if (imgMatch) {
+          imageUrl = imgMatch[1]
+        }
+      }
+    }
+
     return {
       title: sanitizeText(extractTag(block, 'title')) ?? '(無標題)',
       url,
       source: sanitizeText(extractTag(block, 'source')) ?? 'Yahoo 財經',
-      description: sanitizeText(extractTag(block, 'description')),
-      publishedAt: parsePublishedDate(extractTag(block, 'pubDate'))
+      publishedAt: parsePublishedDate(extractTag(block, 'pubDate')),
+      imageUrl: normalizeUrl(imageUrl)
     }
   })
 

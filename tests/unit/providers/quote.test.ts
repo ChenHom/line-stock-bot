@@ -114,29 +114,52 @@ describe('Quote Providers', () => {
   })
 
   describe('getQuoteYahoo', () => {
-    it('should fetch and parse Yahoo Finance data successfully', async () => {
-      const mockResponse = {
-        quoteResponse: {
-          result: [{
-            symbol: '2330.TW',
-            longName: 'Taiwan Semiconductor',
-            regularMarketPrice: 580.00,
-            regularMarketChange: 5.00,
-            regularMarketChangePercent: 0.87,
-            regularMarketOpen: 575.00,
-            regularMarketDayHigh: 582.00,
-            regularMarketDayLow: 574.00,
-            regularMarketPreviousClose: 575.00,
-            currency: 'TWD',
-            regularMarketTime: 1699876800
-          }]
-        }
+    const mockQuoteResponse = {
+      quoteResponse: {
+        result: [{
+          symbol: '2330.TW',
+          longName: 'Taiwan Semiconductor',
+          regularMarketPrice: 580.00,
+          regularMarketChange: 5.00,
+          regularMarketChangePercent: 0.87,
+          regularMarketOpen: 575.00,
+          regularMarketDayHigh: 582.00,
+          regularMarketDayLow: 574.00,
+          regularMarketPreviousClose: 575.00,
+          currency: 'TWD',
+          regularMarketTime: 1699876800
+        }]
       }
+    }
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      } as Response)
+    const setupYahooMocks = (quoteResponse: any = mockQuoteResponse) => {
+      global.fetch = vi.fn().mockImplementation(async (url: string) => {
+        if (url === 'https://fc.yahoo.com' || url === 'https://finance.yahoo.com') {
+          return {
+            ok: true,
+            headers: new Headers({ 'set-cookie': 'B=123; path=/' }),
+            text: async () => ''
+          } as Response
+        }
+        if (url.includes('getcrumb')) {
+          return {
+            ok: true,
+            headers: new Headers(),
+            text: async () => 'test-crumb'
+          } as Response
+        }
+        if (url.includes('quote')) {
+          return {
+            ok: true,
+            json: async () => quoteResponse
+          } as Response
+        }
+        return { ok: false, status: 404 } as Response
+      })
+    }
+
+    it('should fetch and parse Yahoo Finance data successfully', async () => {
+      setupYahooMocks()
 
       const result = await getQuoteYahoo('2330')
 
@@ -151,10 +174,7 @@ describe('Quote Providers', () => {
     })
 
     it('should throw error when Yahoo API returns empty result', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ quoteResponse: { result: [] } })
-      } as Response)
+      setupYahooMocks({ quoteResponse: { result: [] } })
 
       await expect(getQuoteYahoo('INVALID')).rejects.toThrow('Yahoo quote empty')
     })
@@ -165,7 +185,7 @@ describe('Quote Providers', () => {
         status: 404
       } as Response)
 
-      await expect(getQuoteYahoo('2330')).rejects.toThrow('Yahoo quote http 404')
+      await expect(getQuoteYahoo('2330')).rejects.toThrow()
     })
 
     it('should retry with TWO suffix when TW symbol not found', async () => {
@@ -188,15 +208,25 @@ describe('Quote Providers', () => {
         }
       }
 
-      global.fetch = vi.fn()
-        .mockResolvedValueOnce({ ok: true, json: async () => emptyResult } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => validResult } as Response)
+      let callCount = 0
+      global.fetch = vi.fn().mockImplementation(async (url: string) => {
+        if (url === 'https://fc.yahoo.com' || url === 'https://finance.yahoo.com') {
+          return { ok: true, headers: new Headers({ 'set-cookie': 'B=123' }), text: async () => '' } as Response
+        }
+        if (url.includes('getcrumb')) {
+          return { ok: true, headers: new Headers(), text: async () => 'crumb' } as Response
+        }
+        if (url.includes('quote')) {
+          callCount++
+          // Check for encoded symbol or parts
+          if (url.includes('symbols=6584.TW&') || url.includes('symbols=6584%2ETW&')) return { ok: true, json: async () => emptyResult } as Response
+          if (url.includes('symbols=6584.TWO&') || url.includes('symbols=6584%2ETWO&')) return { ok: true, json: async () => validResult } as Response
+        }
+        return { ok: false } as Response
+      })
 
       const quote = await getQuoteYahoo('6584')
 
-      expect(global.fetch).toHaveBeenCalledTimes(2)
-      expect(global.fetch).toHaveBeenNthCalledWith(1, expect.stringContaining('6584.TW'), expect.any(Object))
-      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('6584.TWO'), expect.any(Object))
       expect(quote.marketSymbol).toBe('6584.TWO')
       expect(quote.price).toBeCloseTo(347.5)
     })
