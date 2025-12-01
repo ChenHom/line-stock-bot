@@ -1,36 +1,10 @@
----
-description: "Task list for implementing LINE bot commands and required infra adjustments"
----
-
 # Tasks: LINE 聊天機器人指令系統
 
-**Feature Branch**: `001-line-bot-commands`
-**Generated**: 2025-11-19
-**Updated**: 2025-11-26
-**Input**: Design documents from `specs/001-line-bot-commands/plan.md`, `specs/001-line-bot-commands/spec.md`, `specs/001-line-bot-commands/data-model.md`, `specs/001-line-bot-commands/contracts/`
+**Feature**: `001-line-bot-commands`
+**Status**: Planned
 
-**Total Tasks**: 42
-**Completion**: 32/42
 
----
 
-## Implementation Strategy
-
-**MVP Scope** (User Story 1 only):
-- Stock quote query by symbol/name (MVP)
-- Fuzzy matching for company names (Fuse.js)
-- Provider fallback (TWSE -> FinMind / Yahoo as needed)
-- Cache with 45s TTL for quotes and 15min for news
-- Flex Message display for responses
-
-**Incremental Delivery Order**:
-1. Phase 1-2: Setup & Foundation (blocking)
-2. Phase 3 (US1) - Stock quote query (MVP)
-3. Phase 4 (US2) - News query
-4. Phase 5 (US3) - Help command
-5. Phase 6 - Polish & observability
-
----
 
 ## Phase 1: Setup & Infrastructure (Blocking) ✅
 
@@ -85,7 +59,9 @@ description: "Task list for implementing LINE bot commands and required infra ad
 - [X] T011 [P] [US1] Implement Fuse.js-based fuzzy matcher, `lib/symbol.ts` with 80% confidence threshold and tests in `tests/unit/symbol.test.ts` - file paths: `lib/symbol.ts`, `tests/unit/symbol.test.ts`
 - [X] T012 [P] [US1] Implement TWSE provider at `lib/providers/quote/twse.ts` with Zod validation using `lib/schemas.ts` - file path: `lib/providers/quote/twse.ts`
 - [X] T013 [P] [US1] Implement FinMind provider at `lib/providers/quote/finMind.ts` with token auth + Zod validation - file path: `lib/providers/quote/finMind.ts`
-- [X] T014 [US1] Implement `getQuoteWithFallback(symbol, options?)` in `lib/providers/index.ts` using sequential fallback (TWSE → FinMind) + `withCache` wrapper (45s TTL) - file path: `lib/providers/index.ts`
+- [x] T014 [US1] Update `api/line/webhook.ts` to handle `股價` command and reply with Flex Message
+- [x] T015 [US1] Implement Yahoo Finance session flow (Cookie/Crumb) in `lib/providers/quote/yahooRapid.ts` (Optional backup)
+- [x] T016 [US1] Create unit tests for quote providers in `tests/unit/providers/quote.test.ts`
 - [X] T015 [P] [US1] Create stock quote Flex Message template `createStockQuoteMessage` in `lib/flex.ts` (include quick reply variation) - file path: `lib/flex.ts`
 - [X] T016 [US1] Implement webhook handler for `股價` command in `api/line/webhook.ts` including parsing, `resolveSymbol`, `getQuoteWithFallback` and reply with `createStockQuoteMessage` - file path: `api/line/webhook.ts`
 - [X] T017 [US1] Add error handling for invalid symbol and low-confidence fuzzy matches in `api/line/webhook.ts` (provide helpful messages and quick replies) - file path: `api/line/webhook.ts`
@@ -115,11 +91,11 @@ description: "Task list for implementing LINE bot commands and required infra ad
 
 ### Tasks
 
-- [X] T019 [P] [US2] Implement `lib/providers/news/googleRss.ts` with Zod validation and tests in `tests/unit/providers/news.test.ts` - file paths: `lib/providers/news/googleRss.ts`, `tests/unit/providers/news.test.ts`
-- [X] T020 [P] [US2] Implement `lib/providers/news/yahooRss.ts` with Zod validation - file path: `lib/providers/news/yahooRss.ts`
+- [X] T019 [P] [US2] Implement `lib/providers/news/googleRss.ts` with Zod validation (extract source/image) and tests in `tests/unit/providers/news.test.ts` - file paths: `lib/providers/news/googleRss.ts`, `tests/unit/providers/news.test.ts`
+- [X] T020 [P] [US2] Implement `lib/providers/news/yahooRss.ts` with Zod validation (extract source/image) - file path: `lib/providers/news/yahooRss.ts`
 - [X] T021 [US2] Implement `getIndustryNews(keyword, limit=5)` in `lib/providers/index.ts` with fallback behavior and `withCache` (900s TTL) - file path: `lib/providers/index.ts`
-- [X] T022 [US2] Create news list Flex Message template `createNewsListMessage` in `lib/flex.ts` and add unit tests `tests/unit/flex.test.ts` - file paths: `lib/flex.ts`, `tests/unit/flex.test.ts`
-- [X] T023 [US2] Implement `新聞` command handler in `api/line/webhook.ts` (parse keyword, call `getIndustryNews`, reply with `createNewsListMessage`) - file path: `api/line/webhook.ts`
+- [X] T022 [US2] Create news list Flex Message template `createNewsListMessage` in `lib/flex.ts` (UTC+8, hide img, source priority) and add unit tests `tests/unit/flex.test.ts` - file paths: `lib/flex.ts`, `tests/unit/flex.test.ts`
+- [X] T023 [US2] Implement `新聞` command handler in `api/line/webhook.ts` (parse keyword, call `getIndustryNews`, reply with `createNewsListMessage` [UTC+8]) - file path: `api/line/webhook.ts`
 - [X] T024 [US2] Add handling for overly broad keywords and return generic financial news or suggestion in `api/line/webhook.ts` - file path: `api/line/webhook.ts`
 
 **Parallel Opportunities**: T019, T020, T022 can be done in parallel; T021 depends on T019/T020.
@@ -138,7 +114,7 @@ description: "Task list for implementing LINE bot commands and required infra ad
 
 - [X] T025 [P] [US3] Implement `createHelpMessage` in `lib/flex.ts` and add unit tests in `tests/unit/flex.test.ts` - file paths: `lib/flex.ts`, `tests/unit/flex.test.ts`
 - [X] T026 [US3] Implement `help`/`幫助` handler in `api/line/webhook.ts` and ensure both aliases return the same Flex Message - file path: `api/line/webhook.ts`
-- [X] T027 [US3] Implement unknown command handler in `api/line/webhook.ts` to detect numeric-only input and attach FR-013 quick replies - file path: `api/line/webhook.ts`
+- [X] T027 [US3] Implement unknown command handler in `api/line/webhook.ts` to detect numeric-only input and attach FR-013 quick replies (use input digits) - file path: `api/line/webhook.ts`
 - [X] T028 [P] [US3] Implement quick reply factory that injects numeric-only input into quick reply messageAction payloads in `lib/flex.ts` - file path: `lib/flex.ts`
 
 **Acceptance Criteria**:

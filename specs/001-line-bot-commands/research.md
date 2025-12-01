@@ -216,4 +216,83 @@ This research documents design choices and clarifies implementation details wher
   - Rate limits: 30 requests/min by default token → throttle via cache (45s) + fallback only when TWSE fails
   - Need to set `FINMIND_TOKEN` env var; log 401/429 separately for observability
 
-All items map to tasks T003 (caching), T004 (validation), T005 (withCache), and new tasks for fuzzy matching and logger enhancement as specified in `/specs/001-line-bot-commands/tasks.md`.
+## Question 11: Yahoo Finance API 401 Mitigation
+
+- **Problem**: Yahoo Finance has tightened security on `query1.finance.yahoo.com`, requiring a valid cookie and crumb session. Simple `getcrumb` calls now fail with 401 if no prior cookie exists.
+- **Decision**: Implement a robust session flow:
+    1. Fetch `https://fc.yahoo.com` (or `finance.yahoo.com`) to obtain initial cookies.
+    2. Use those cookies to fetch `https://query1.finance.yahoo.com/v1/test/getcrumb` to get the crumb.
+    3. Use both cookie and crumb for the quote request.
+- **Library Recommendation**: Use `yahoo-finance2` (v2.8.1+) if a dependency is acceptable, as it handles this flow automatically. For this project (keeping dependencies low), we will patch the custom `yahooRapid.ts` provider to implement the flow.
+- **Code Snippet (Concept)**:
+  ```typescript
+  // 1. Get initial cookie
+  const res1 = await fetch('https://fc.yahoo.com', { headers: { 'User-Agent': ... } });
+  const cookie = res1.headers.get('set-cookie');
+  
+  // 2. Get crumb with cookie
+  const res2 = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+    headers: { Cookie: cookie, 'User-Agent': ... }
+  });
+  const crumb = await res2.text();
+  
+  // 3. API Call
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=...&crumb=${crumb}`;
+  ```
+
+## Question 12: FinMind Real-time Data Verification
+
+- **Finding**: The dedicated real-time endpoint `taiwan_stock_tick_snapshot` is restricted to **Sponsor** members.
+- **Implication**: Free users must use `TaiwanStockTick` (historical/intraday ticks).
+- **Verification**:
+    - **Endpoint**: `https://api.finmindtrade.com/api/v4/data`
+    - **Dataset**: `TaiwanStockTick` (for free users) vs `taiwan_stock_tick_snapshot` (Sponsors).
+    - **Rate Limits**: Free tier has limits (returns 402 Payment Required when exceeded). Approx 600/hour (needs monitoring).
+    - **Response Format**:
+      ```json
+      {
+        "msg": "success",
+        "status": 200,
+        "data": [
+          {
+            "date": "2025-12-01",
+            "stock_id": "2330",
+            "deal_price": 1000,
+            "volume": 5,
+            "Time": "10:00:00"
+          }
+        ]
+      }
+      ```
+- **Action**: Ensure the FinMind provider handles 402 errors by falling back to another provider or returning a "limit exceeded" state.
+
+## Research Outcome / Action Items
+
+### Completed Research Areas
+1. ✅ **Cache backend**: Upstash Redis with REST API
+2. ✅ **TTL/Key strategy**: quote=45s, news=900s with time-bucket keys
+3. ✅ **Runtime validation**: Zod for provider response validation
+4. ✅ **Provider fallback**: Configurable order via env var, <1s fallback, <3s total response
+5. ✅ **Fuzzy matching**: Fuse.js with 80% confidence threshold for stock names
+6. ✅ **Testing strategy**: Vitest with mocked providers + Upstash integration tests
+7. ✅ **Structured logging**: Enhanced custom logger with JSON output + metadata fields
+8. ✅ **Stale cache**: Stale-while-revalidate pattern for resilience
+9. ✅ **Quick reply auto-fill**: Message actions reuse the last numeric input without extra storage
+10. ✅ **FinMind fallback**: TWSE primary, FinMind `TaiwanStockTick` fallback with token auth
+11. ✅ **Yahoo 401 Fix**: Identified session flow requirements (Cookie -> Crumb).
+12. ✅ **FinMind Verification**: Confirmed `taiwan_stock_tick_snapshot` is Sponsor-only; `TaiwanStockTick` is the viable free alternative.
+
+### Implementation Tasks
+1. Add Upstash wrapper (`lib/cache.ts`) with REST client and `setex`/`get` operations + stale-while-revalidate support
+2. Add `lib/schemas.ts` with Zod schema for Quote and NewsItem
+3. Update providers to run `schema.parse(response)` and rely on fallback on error
+4. Implement `withCache` wrapper used by providers
+5. Add Fuse.js-based fuzzy matcher in `lib/symbol.ts` with 80% confidence threshold
+6. Enhance `lib/logger.ts` with requestId, userId, providerName, latency fields
+7. Update provider fallback logic to support configurable order + timeout handling
+8. Add metadata to Flex Message when serving stale cache ("資料可能稍有延遲")
+9. Build quick reply factory that injects the last numeric input into `查股價`/`看新聞` message actions for FR-013
+10. **[New]** Update `yahooRapid.ts` to implement the full Cookie-Crumb session flow.
+11. **[New]** Update `finMind.ts` to handle 402/429 errors gracefully.
+
+**Status**: All research questions resolved. Ready for Phase 1 (Design & Contracts).

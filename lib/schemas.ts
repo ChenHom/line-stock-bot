@@ -30,7 +30,7 @@ export const NewsItemSchema = z.object({
   url: z.string().url('URL must be valid'),
   source: z.string().optional(),
   publishedAt: z.string().optional(),
-  description: z.string().optional()
+  imageUrl: z.string().url().optional()
 })
 
 export type NewsItem = z.infer<typeof NewsItemSchema>

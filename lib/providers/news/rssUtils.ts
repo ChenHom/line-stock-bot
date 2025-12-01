@@ -28,6 +28,12 @@ export function extractTag(block: string, tag: string): string | undefined {
   return undefined
 }
 
+export function extractAttribute(block: string, tagName: string, attributeName: string): string | undefined {
+  const regex = new RegExp(`<${tagName}[^>]*${attributeName}=["']([^"']+)["']`, 'i')
+  const match = block.match(regex)
+  return match ? match[1] : undefined
+}
+
 export function sanitizeText(value?: string): string | undefined {
   if (!value) return undefined
   const withoutHtml = value.replace(/<[^>]+>/g, ' ')

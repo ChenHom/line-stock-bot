@@ -120,9 +120,39 @@ async function ensureYahooSession(forceRefresh = false): Promise<YahooSession> {
     return yahooSession
   }
 
-  const response = await fetch(YAHOO_CRUMB_URL, {
+  // 1. Get initial cookie from fc.yahoo.com
+  const cookieResponse = await fetch('https://fc.yahoo.com', {
     cache: 'no-store',
     headers: buildYahooHeaders()
+  })
+
+  // Even if 404/302, we just want the cookies
+  const initialCookies = extractCookies(cookieResponse.headers)
+  if (!initialCookies.length) {
+    // Fallback: try finance.yahoo.com if fc.yahoo.com fails to set cookies
+    const backupResponse = await fetch('https://finance.yahoo.com', {
+      cache: 'no-store',
+      headers: buildYahooHeaders()
+    })
+    const backupCookies = extractCookies(backupResponse.headers)
+    if (backupCookies.length) {
+      initialCookies.push(...backupCookies)
+    }
+  }
+
+  if (!initialCookies.length) {
+    throw new Error('Yahoo initial cookie missing')
+  }
+
+  const cookieString = initialCookies.join('; ')
+
+  // 2. Get crumb using the cookie
+  const response = await fetch(YAHOO_CRUMB_URL, {
+    cache: 'no-store',
+    headers: {
+      ...buildYahooHeaders(),
+      Cookie: cookieString
+    }
   })
 
   if (!response.ok) {
@@ -134,13 +164,8 @@ async function ensureYahooSession(forceRefresh = false): Promise<YahooSession> {
     throw new Error('Yahoo crumb empty')
   }
 
-  const cookies = extractCookies(response.headers)
-  if (!cookies.length) {
-    throw new Error('Yahoo crumb missing cookies')
-  }
-
   yahooSession = {
-    cookie: cookies.join('; '),
+    cookie: cookieString,
     crumb,
     expiresAt: Date.now() + YAHOO_SESSION_TTL_MS
   }

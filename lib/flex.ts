@@ -199,20 +199,15 @@ function createNewsBubble(keyword: string, news: NewsItem) {
   }
 
   const metaLine = metaParts.join(' ・ ')
-  const snippet = news.description ? truncateText(news.description, 120) : undefined
   const bodyContents: any[] = [
-    { type: 'text', text: news.title || '(無標題)', wrap: true, weight: 'bold', size: 'sm' }
+    { type: 'text', text: news.title || '(無標題)', wrap: true, weight: 'bold', size: 'sm', maxLines: 3 }
   ]
 
   if (metaLine) {
     bodyContents.push({ type: 'text', text: metaLine, size: 'xs', color: '#888888', wrap: true })
   }
 
-  if (snippet) {
-    bodyContents.push({ type: 'text', text: snippet, size: 'xs', color: '#666666', wrap: true })
-  }
-
-  return {
+  const bubble: any = {
     type: 'bubble' as const,
     size: 'kilo' as const,
     body: {
@@ -231,6 +226,19 @@ function createNewsBubble(keyword: string, news: NewsItem) {
       ]
     }
   }
+
+  if (news.imageUrl) {
+    bubble.hero = {
+      type: 'image' as const,
+      url: news.imageUrl,
+      size: 'full' as const,
+      aspectRatio: '20:13' as const,
+      aspectMode: 'cover' as const,
+      action: news.url ? { type: 'uri' as const, label: 'Open', uri: news.url } : undefined
+    }
+  }
+
+  return bubble
 }
 
 function createStaleNoticeBubble(keyword: string) {
@@ -334,3 +342,5 @@ export function buildHelpQuickReplies(options?: { lastNumericInput?: string }): 
     { type: 'action', action: { type: 'message', label: '看新聞', text: newsText } }
   ]
 }
+
+
