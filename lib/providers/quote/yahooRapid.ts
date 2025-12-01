@@ -120,27 +120,43 @@ async function ensureYahooSession(forceRefresh = false): Promise<YahooSession> {
     return yahooSession
   }
 
-  const response = await fetch(YAHOO_CRUMB_URL, {
+  // Step 1: Get initial cookie from fc.yahoo.com
+  const fcResponse = await fetch('https://fc.yahoo.com', {
     cache: 'no-store',
     headers: buildYahooHeaders()
   })
 
-  if (!response.ok) {
-    throw new Error(`Yahoo crumb http ${response.status}`)
+  // Note: fc.yahoo.com might return 302/404 but still set cookies, which is fine.
+  // We just need the cookies.
+  const fcCookies = extractCookies(fcResponse.headers)
+
+  // Step 2: Get crumb using the cookies
+  const crumbResponse = await fetch(YAHOO_CRUMB_URL, {
+    cache: 'no-store',
+    headers: {
+      ...buildYahooHeaders(),
+      Cookie: fcCookies.join('; ')
+    }
+  })
+
+  if (!crumbResponse.ok) {
+    throw new Error(`Yahoo crumb http ${crumbResponse.status}`)
   }
 
-  const crumb = (await response.text()).trim()
+  const crumb = (await crumbResponse.text()).trim()
   if (!crumb) {
     throw new Error('Yahoo crumb empty')
   }
 
-  const cookies = extractCookies(response.headers)
-  if (!cookies.length) {
+  const crumbCookies = extractCookies(crumbResponse.headers)
+  const allCookies = [...new Set([...fcCookies, ...crumbCookies])]
+
+  if (!allCookies.length) {
     throw new Error('Yahoo crumb missing cookies')
   }
 
   yahooSession = {
-    cookie: cookies.join('; '),
+    cookie: allCookies.join('; '),
     crumb,
     expiresAt: Date.now() + YAHOO_SESSION_TTL_MS
   }

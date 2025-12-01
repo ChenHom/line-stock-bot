@@ -340,6 +340,21 @@ describe('Webhook Integration Tests', () => {
       expect(body.messages[0].contents.type).toBe('bubble')
     })
 
+    it('should handle help command and reply with help Flex', async () => {
+      await sendCommand('help')
+
+      const replyCall = mockFetch.mock.calls.find((call: any) =>
+        call[0].includes('api.line.me')
+      )
+      expect(replyCall).toBeDefined()
+
+      const body = JSON.parse(replyCall[1].body)
+      expect(body.messages[0].type).toBe('flex')
+      expect(body.messages[0].altText).toBe('可用指令')
+      expect(body.messages[0].contents.type).toBe('bubble')
+      expect(JSON.stringify(body.messages[0].contents)).toContain('指令使用說明')
+    })
+
     it('should handle unknown command and reply with help suggestion Flex', async () => {
       await sendCommand('unknown-command')
 

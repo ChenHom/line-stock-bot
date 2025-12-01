@@ -27,14 +27,15 @@ Validation Rules:
 ### News Item
 - `title` (string)
 - `url` (string) - valid URL
-- `source` (string, optional)
+- `source` (string, optional) - Publisher/Author prioritized, fallback to domain
 - `publishedAt` (string, ISO 8601, optional)
-- `description` (string, optional) - news summary/snippet
+- `imageUrl` (string, optional) - Preview image URL
 
 Validation Rules:
 - `title` MUST be non-empty
 - `url` MUST be a valid URL (https://)
 - `publishedAt` MUST be valid ISO 8601 if present
+- `imageUrl` MUST be valid URL if present
 
 ### Command
 - `cmd` (enum): `price`, `news`, `help`
