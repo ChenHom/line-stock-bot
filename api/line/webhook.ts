@@ -162,26 +162,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
       try {
         if (HELP_ALIASES.has(cmd)) {
-          await replyFlex(ev.replyToken, '可用指令', createHelpMessage(), {
-            quickReplyItems: buildHelpQuickReplies()
-          })
+          await handleHelpCommand(ev.replyToken)
         } else if (cmd === '股價' || cmd === 'price') {
           await handleStockQuoteCommand(ev.replyToken, args)
         } else if (cmd === '新聞' || cmd === 'news') {
           await handleNewsCommand(ev.replyToken, args)
         } else {
-          const helpFlex = createHelpMessage({
-            title: '無法識別的指令',
-            contextNote: numericOnlyInput
-              ? '偵測到您輸入的代號，可直接點擊下方快速按鈕重新查詢。'
-              : '請輸入「help」或直接點選下方範例重新查詢。',
-            quickReplyNumericInput: numericOnlyInput || undefined
-          })
-          const quickReplyItems = buildHelpQuickReplies({ lastNumericInput: numericOnlyInput || undefined })
-          if (numericOnlyInput) {
-            logger.info('webhook_numeric_retry_buttons', { sourceInput: numericOnlyInput })
-          }
-          await replyFlex(ev.replyToken, '無法識別的指令', helpFlex, { quickReplyItems })
+          await handleUnknownCommand(ev.replyToken, numericOnlyInput)
         }
       } catch (error) {
         logger.webhookError(error instanceof Error ? error : String(error), { cmd, args })
@@ -300,4 +287,28 @@ function isBroadNewsKeyword(keyword: string): boolean {
     return true
   }
   return BROAD_NEWS_KEYWORDS.has(normalized)
+}
+
+async function handleHelpCommand(replyToken: string) {
+  await replyFlex(replyToken, '可用指令', createHelpMessage(), {
+    quickReplyItems: buildHelpQuickReplies()
+  })
+}
+
+async function handleUnknownCommand(replyToken: string, numericInput: string | null) {
+  const helpFlex = createHelpMessage({
+    title: '無法識別的指令',
+    contextNote: numericInput
+      ? '偵測到您輸入的代號，可直接點擊下方快速按鈕重新查詢。'
+      : '請輸入「help」或直接點選下方範例重新查詢。',
+    quickReplyNumericInput: numericInput || undefined
+  })
+
+  const quickReplyItems = buildHelpQuickReplies({ lastNumericInput: numericInput || undefined })
+
+  if (numericInput) {
+    logger.info('webhook_numeric_retry_buttons', { sourceInput: numericInput })
+  }
+
+  await replyFlex(replyToken, '無法識別的指令', helpFlex, { quickReplyItems })
 }

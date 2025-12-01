@@ -1,36 +1,74 @@
----
-description: "Task list for implementing LINE bot commands and required infra adjustments"
----
-
 # Tasks: LINE 聊天機器人指令系統
 
-**Feature Branch**: `001-line-bot-commands`
-**Generated**: 2025-11-19
-**Updated**: 2025-11-26
-**Input**: Design documents from `specs/001-line-bot-commands/plan.md`, `specs/001-line-bot-commands/spec.md`, `specs/001-line-bot-commands/data-model.md`, `specs/001-line-bot-commands/contracts/`
+**Feature**: `001-line-bot-commands`
+**Status**: Planned
 
-**Total Tasks**: 42
-**Completion**: 32/42
+## Phase 1: Setup & Configuration
 
----
+Goal: Initialize project structure, logging, and type definitions.
+
+- [x] T001 Setup project structure and install dependencies (`fuse.js`, `zod`, `@upstash/redis`, `xml2js`)
+- [x] T002 Configure `vitest` and create setup file in `tests/setup.ts`
+- [x] T003 Implement structured logger in `lib/logger.ts` (JSON format, request tracing)
+- [x] T004 Define Zod schemas in `lib/schemas.ts` (Quote, NewsItem, LogEntry)
+- [x] T005 Define shared types in `lib/types.ts` (export inferred types from schemas)
+
+## Phase 2: Foundation & Infrastructure
+
+Goal: Implement caching, fuzzy matching, and provider abstractions.
+
+- [x] T006 Implement Upstash Redis wrapper in `lib/cache.ts` (REST client, stale-while-revalidate)
+- [x] T007 Implement `withCache` HOF in `lib/providers/withCache.ts`
+- [x] T008 Implement Fuse.js fuzzy matcher in `lib/symbol.ts` (load stock list, >80% confidence)
+- [x] T009 Create Flex Message templates in `lib/flex.ts` (Quote card, News carousel, Help bubble)
+- [x] T010 [P] Create integration test for cache wrapper in `tests/integration/cache.test.ts`
+
+## Phase 3: User Story 1 - Stock Quote (P1)
+
+Goal: Enable users to query real-time stock quotes with fallback.
+
+- [x] T011 [US1] Implement TWSE provider in `lib/providers/quote/twse.ts` (Primary)
+- [x] T012 [US1] Implement FinMind provider in `lib/providers/quote/finMind.ts` (Fallback, handle 402)
+- [x] T013 [US1] Implement provider registry and fallback logic in `lib/providers/index.ts` (getQuoteWithFallback)
+- [x] T014 [US1] Update `api/line/webhook.ts` to handle `股價` command and reply with Flex Message
+- [x] T015 [US1] Implement Yahoo Finance session flow (Cookie/Crumb) in `lib/providers/quote/yahooRapid.ts` (Optional backup)
+- [x] T016 [US1] Create unit tests for quote providers in `tests/unit/providers/quote.test.ts`
+
+## Phase 4: User Story 2 - Industry News (P2)
+
+Goal: Enable users to query industry news with fallback.
+
+- [x] T017 [US2] Implement RSS parser utility in `lib/providers/news/rssUtils.ts` (`xml2js`)
+- [x] T018 [US2] Implement Google News RSS provider in `lib/providers/news/googleRss.ts` (Primary)
+- [x] T019 [US2] Implement Yahoo News RSS provider in `lib/providers/news/yahooRss.ts` (Fallback)
+- [x] T020 [US2] Update `lib/providers/index.ts` to include `getIndustryNews` with fallback
+- [x] T021 [US2] Update `api/line/webhook.ts` to handle `新聞` command and reply with Flex Message
+- [x] T022 [US2] Create unit tests for news providers in `tests/unit/providers/news.test.ts`
+
+## Phase 5: User Story 3 - Help & Polish (P3)
+
+Goal: Implement help command, error handling, and UX improvements.
+
+- [x] T023 [US3] Implement `handleHelp` in `api/line/webhook.ts` (or separate handler) <!-- id: 23 -->
+- [x] T024 [US3] Implement global error handling and user-friendly error messages in `api/line/webhook.ts` <!-- id: 24 -->
+- [x] T025 [US3] Verify webhook signature validation in `api/line/webhook.ts` <!-- id: 25 -->
+- [x] T026 [US3] Finalize error handling and logging in `api/line/webhook.ts` (catch-all, friendly messages) <!-- id: 26 -->
+- [x] T027 [US3] Perform end-to-end manual testing with LINE client <!-- id: 27 -->
+
+## Dependencies
+
+- Phase 1 & 2 must be completed before Phase 3, 4, 5.
+- Phase 3 (Quote) and Phase 4 (News) can be developed in parallel after Phase 2.
+- Phase 5 (Help) depends on the command structure established in Phase 3 & 4.
 
 ## Implementation Strategy
 
-**MVP Scope** (User Story 1 only):
-- Stock quote query by symbol/name (MVP)
-- Fuzzy matching for company names (Fuse.js)
-- Provider fallback (TWSE -> FinMind / Yahoo as needed)
-- Cache with 45s TTL for quotes and 15min for news
-- Flex Message display for responses
+1. **Foundation**: Build the robust caching and logging layer first. This is critical for serverless reliability.
+2. **Quote MVP**: Implement TWSE provider and basic webhook to get the "Happy Path" for quotes working.
+3. **Resilience**: Add FinMind fallback and stale-cache logic.
+4. **News**: Add News providers and Flex messages.
+5. **Polish**: Add Help, Quick Replies, and ensure all edge cases (timeouts, 402s) are handled gracefully.
 
-**Incremental Delivery Order**:
-1. Phase 1-2: Setup & Foundation (blocking)
-2. Phase 3 (US1) - Stock quote query (MVP)
-3. Phase 4 (US2) - News query
-4. Phase 5 (US3) - Help command
-5. Phase 6 - Polish & observability
-
----
 
 ## Phase 1: Setup & Infrastructure (Blocking) ✅
 

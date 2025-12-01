@@ -1,6 +1,6 @@
 # line-stock-bot Development Guidelines
 
-請使用繁體中文對話
+強制要求使用繁體中文對話
 
 Auto-generated from all feature plans. Last updated: 2025-11-13
 
@@ -30,9 +30,9 @@ npm test && npm run lint
 TypeScript 5.x (Node.js latest LTS): Follow standard conventions
 
 ## Recent Changes
+- 001-line-bot-commands: Added TypeScript 5.x (Node.js latest LTS) + `@line/bot-sdk`, `zod`, `@upstash/redis`, `tsx`, `node-fetch` (or native fetch), `vercel`
 - 001-line-bot-commands: Added TypeScript 5.x on Node.js 18 LTS + `@line/bot-sdk`, `zod`, `@upstash/redis`, `Fuse.js`, FinMind REST (`TaiwanStockTick`), `node-fetch`/global `fetch`, custom logger/monitoring utilities
 - 001-line-bot-commands: Added TypeScript 5.x on Node.js 18 LTS + `@line/bot-sdk`, `zod`, `@upstash/redis`, `node-fetch` (or global fetch), `Fuse.js`, custom `logger`, `tsx`, `vitest`
-- 001-line-bot-commands: Added TypeScript 5.x (Node.js latest LTS) + `@line/bot-sdk`, `zod`, `@upstash/redis`, `tsx`, `node-fetch` (or native fetch), `vercel`
 
 
 <!-- MANUAL ADDITIONS START -->
