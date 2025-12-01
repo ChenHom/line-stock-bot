@@ -363,7 +363,7 @@ describe('Webhook Integration Tests', () => {
       expect(body.messages[0].type).toBe('flex')
       expect(body.messages[0].altText).toBe('無法識別的指令')
       expect(body.messages[0].contents.type).toBe('bubble')
-      expect(JSON.stringify(body.messages[0].contents)).toContain('請輸入「help」或直接點選下方範例重新查詢')
+      expect(JSON.stringify(body.messages[0].contents)).toContain('可直接點擊下方快速按鈕重新查詢')
     })
 
     it('should handle provider error and reply with error Flex', async () => {

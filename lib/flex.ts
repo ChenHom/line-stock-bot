@@ -273,10 +273,10 @@ function truncateText(value: string, length: number): string {
   return `${value.slice(0, length - 1)}…`
 }
 
-export function createHelpMessage(options?: { title?: string; contextNote?: string; quickReplyNumericInput?: string }) {
+export function createHelpMessage(options?: { title?: string; contextNote?: string; quickReplyInput?: string }) {
   const title = options?.title ?? '指令使用說明'
   const contextNote = options?.contextNote
-  const quickReplyItems = buildHelpQuickReplies({ lastNumericInput: options?.quickReplyNumericInput })
+  const quickReplyItems = buildHelpQuickReplies({ lastInput: options?.quickReplyInput })
 
   const bodyContents: any[] = [
     { type: 'text', text: title, weight: 'bold', size: 'lg', wrap: true }
@@ -344,10 +344,10 @@ function sanitizeNumericInput(value?: string | null): string | null {
   return NUMERIC_INPUT_REGEX.test(trimmed) ? trimmed : null
 }
 
-export function buildHelpQuickReplies(options?: { lastNumericInput?: string }): LineQuickReplyItem[] {
-  const numeric = sanitizeNumericInput(options?.lastNumericInput)
-  const priceText = numeric ? `股價 ${numeric}` : QUICK_REPLY_DEFAULTS.price
-  const newsText = numeric ? `新聞 ${numeric}` : QUICK_REPLY_DEFAULTS.news
+export function buildHelpQuickReplies(options?: { lastInput?: string }): LineQuickReplyItem[] {
+  const input = options?.lastInput?.trim()
+  const priceText = input ? `股價 ${input}` : QUICK_REPLY_DEFAULTS.price
+  const newsText = input ? `新聞 ${input}` : QUICK_REPLY_DEFAULTS.news
 
   return [
     { type: 'action', action: { type: 'message', label: '查股價', text: priceText } },
