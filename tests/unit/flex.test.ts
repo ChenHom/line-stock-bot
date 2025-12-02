@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createNewsListMessage } from '../../lib/flex'
 import { NewsItem } from '../../lib/schemas'
+import { createMultiMatchMessage } from '../../lib/flex'
 
 describe('Flex Messages', () => {
   describe('createNewsListMessage', () => {
@@ -42,6 +43,26 @@ describe('Flex Messages', () => {
       expect(bubble2.type).toBe('bubble')
       expect(bubble2.hero).toBeUndefined()
       expect(bubble2.body.contents[0].text).toBe('Test News 2')
+    })
+  })
+
+  describe('createMultiMatchMessage', () => {
+    it('renders a carousel for multiple matches', () => {
+      const matches = [
+        { symbol: '2330', name: '台積電', confidence: 95 },
+        { symbol: '2303', name: '聯電', confidence: 85 }
+      ]
+      const flex = createMultiMatchMessage('台', matches)
+      expect(flex).not.toBeNull()
+      expect(flex.type).toBe('carousel')
+      expect(flex.contents.length).toBe(2)
+      expect(flex.contents[0].body.contents[0].text).toContain('2330')
+    })
+
+    it('returns a status flex when no matches', () => {
+      const flex = createMultiMatchMessage('foo', [])
+      expect(flex.type).toBe('bubble')
+      expect(JSON.stringify(flex)).toContain('找不到')
     })
   })
 })

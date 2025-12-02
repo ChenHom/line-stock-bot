@@ -158,6 +158,46 @@ export function createNewsListMessage(keyword: string, items: NewsItem[], option
   return { type: 'carousel', contents: bubbles }
 }
 
+export function createMultiMatchMessage(query: string, matches: { symbol: string; name: string; confidence: number; }[]) {
+  if (!Array.isArray(matches) || matches.length === 0) {
+    return buildStatusFlex('找不到明確的股票', `查詢：${query}`, 'info')
+  }
+
+  const bubbles = matches.slice(0, 5).map((m) => {
+    const title = `${m.symbol} ${m.name}`
+    const confidenceText = `相似度 ${Math.round(m.confidence)}%`
+    return {
+      type: 'bubble' as const,
+      size: 'kilo' as const,
+      body: {
+        type: 'box' as const,
+        layout: 'vertical' as const,
+        spacing: 'sm' as const,
+        contents: [
+          { type: 'text', text: title, weight: 'bold', size: 'sm', wrap: true },
+          { type: 'text', text: confidenceText, size: 'xs', color: '#888888' }
+        ]
+      },
+      footer: {
+        type: 'box' as const,
+        layout: 'vertical' as const,
+        contents: [
+          {
+            type: 'button' as const,
+            style: 'primary' as const,
+            action: { type: 'message' as const, label: '查詢股價', text: `股價 ${m.symbol}` }
+          }
+        ]
+      }
+    }
+  })
+
+  if (bubbles.length === 1) {
+    return bubbles[0]
+  }
+  return { type: 'carousel', contents: bubbles }
+}
+
 export function buildNewsFlexFromItems(keyword: string, items: NewsItem[], options?: { isStale?: boolean }) {
   return createNewsListMessage(keyword, items, options)
 }

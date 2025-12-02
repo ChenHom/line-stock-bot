@@ -5,10 +5,11 @@ import {
   createNewsListMessage,
   buildStatusFlex,
   createHelpMessage,
-  buildHelpQuickReplies
+  buildHelpQuickReplies,
+  createMultiMatchMessage
 } from '../../lib/flex'
 import { logger } from '../../lib/logger'
-import { fuzzyMatchSymbol } from '../../lib/symbol'
+import { fuzzyMatchSymbols, CONFIDENCE_THRESHOLD } from '../../lib/symbol'
 
 import type { IncomingMessage, ServerResponse } from 'http'
 import type { LineQuickReplyItem } from '../../lib/flex'
@@ -197,13 +198,22 @@ async function handleStockQuoteCommand(replyToken: string, rawArgs: string) {
   let matchedName: string | undefined
 
   if (!STOCK_CODE_REGEX.test(query)) {
-    const match = fuzzyMatchSymbol(query)
-    if (!match) {
-      await replyFlex(replyToken, '無法識別股票', buildStatusFlex('找不到明確的股票', '找到多筆相似結果，請使用更精確的名稱或股票代號。', 'warning'))
+    const matches = fuzzyMatchSymbols(query, 5)
+    if (!matches || matches.length === 0) {
+      await replyFlex(replyToken, '無法識別股票', buildStatusFlex('找不到明確的股票', '找不到相似的股票，請使用股票代號或更精確的名稱。', 'warning'))
       return
     }
-    resolvedSymbol = match.symbol
-    matchedName = match.name
+
+    if (matches.length > 1) {
+      // Ambiguous: Return a selection message for the user to pick
+      const multiFlex = createMultiMatchMessage(query, matches)
+      await replyFlex(replyToken, `多筆相似：${query}`, multiFlex)
+      return
+    }
+
+    const best = matches[0]
+    resolvedSymbol = best.symbol
+    matchedName = best.name
   }
 
   try {

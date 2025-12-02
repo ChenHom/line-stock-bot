@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js'
 
 const NUMERIC_SYMBOL_REGEX = /^\d{4}$/
-const CONFIDENCE_THRESHOLD = 80
+export const CONFIDENCE_THRESHOLD = 80
 
 interface StockDictionaryEntry {
   symbol: string
@@ -61,10 +61,9 @@ export function resolveSymbol(input: string): string {
     return normalized
   }
 
-  const fuzzyResult = fuzzyMatchSymbol(normalized)
-  if (fuzzyResult) {
-    return fuzzyResult.symbol
-  }
+  const fuzzyResults = fuzzyMatchSymbols(normalized, 1)
+  const best = fuzzyResults && fuzzyResults.length > 0 ? fuzzyResults[0] : undefined
+  if (best) return best.symbol
 
   return normalized
 }
@@ -76,22 +75,32 @@ export function fuzzyMatchSymbol(input: string): FuzzyMatchResult | null {
   const normalized = normalizeInput(input)
   if (!normalized) return null
 
-  const [bestMatch] = fuse.search(normalized)
-  if (!bestMatch || typeof bestMatch.score !== 'number') {
-    return null
-  }
+  const results = fuzzyMatchSymbols(normalized, 1)
+  return results && results.length > 0 ? results[0] : null
+}
 
-  const confidence = scoreToConfidence(bestMatch.score)
-  if (confidence < CONFIDENCE_THRESHOLD) {
-    return null
-  }
+/**
+ * Fuzzy match returning top N results sorted by confidence (desc).
+ */
+export function fuzzyMatchSymbols(input: string, limit = 5): FuzzyMatchResult[] {
+  const normalized = normalizeInput(input)
+  if (!normalized) return []
 
-  return {
-    symbol: bestMatch.item.symbol,
-    name: bestMatch.item.name,
-    confidence,
-    score: bestMatch.score
-  }
+  const raw = fuse.search(normalized, { limit })
+  if (!raw || raw.length === 0) return []
+
+  const mapped = raw
+    .filter((r) => typeof r.score === 'number')
+    .map((r) => ({
+      symbol: r.item.symbol,
+      name: r.item.name,
+      confidence: scoreToConfidence(r.score as number),
+      score: r.score
+    }))
+    .filter((m) => m.confidence >= CONFIDENCE_THRESHOLD)
+    .sort((a, b) => b.confidence - a.confidence)
+
+  return mapped.slice(0, limit)
 }
 
 export function toMarketSymbol(symbol: string, board?: 'TW' | 'TWO'): string {

@@ -76,28 +76,42 @@ This research documents design choices and clarifies implementation details wher
 - Decision: Use `node:test` or Jest for unit tests; add integration tests that mock external providers; use Upstash free tier for integration tests if needed.
 - Rationale: Ensures Zod validation, fallback behavior, and cache wrapper integration is covered.
 
-## Question 7: Structured Logging for Vercel
+## Question 8: Fuzzy Match UI for Multiple Results
 
-- **Decision**: **Enhance existing custom logger** - Continue using the project's lightweight logger implementation with improvements
-- **Rationale**: The existing custom logger (~1KB, zero dependencies) already outputs Vercel-compatible JSON format and implements all required structured fields. Adding pino (637 KB) or winston (273 KB) would introduce unnecessary bundle size and complexity for this project's scope. Custom solution provides full control and minimizes cold start time.
-- **Alternatives Considered**:
-  - `pino`: Best third-party option (excellent performance, 637 KB) but adds unnecessary dependency
-  - `winston`: Mature and stable (273 KB) but slower performance and more complex configuration
-  - `bunyan`: Lightweight (201 KB) but deprecated (last update 2021)
-  - `tslog`: TypeScript-native (223 KB) but not pure JSON output by default
-  - `console-log-level`: Ultra-light (4.6 KB) but no structured logging support
-- **Implementation Enhancements**:
-  ```typescript
-  export interface LogEntry {
-    timestamp: string
-    level: LogLevel
-    message: string
-    requestId?: string      // Request tracing
-    userId?: string         // Hashed LINE user ID
-    providerName?: string   // Provider name
-    latency?: number        // Latency in ms
-    details?: Record<string, any>
-    error?: string
+- **Decision**: Use **Bubble with Buttons** (Vertical List) in Flex Message.
+- **Rationale**:
+    - Stock names are text-based; vertical scanning is more natural than horizontal scrolling (Carousel).
+    - Quick Replies are transient; Flex Message persists in chat history, allowing users to revisit the list.
+    - Limit to top 5 matches to fit within Flex Message size limits and cognitive load.
+- **Implementation**:
+    - Create a `Bubble` container.
+    - Body contains a text "請選擇您要查詢的股票".
+    - Footer contains a vertical box of buttons, each labeled with "StockName (Symbol)" and action "股價 {Symbol}".
+
+## Question 9: Provider Implementation Details
+
+- **TWSE (Primary Quote)**:
+    - Source: `https://mis.twse.com.tw/stock/api/getStockInfo.jsp`
+    - Note: Unofficial API, widely used. Needs session cookie handling sometimes.
+    - Fallback: If this fails, use FinMind.
+
+- **FinMind (Secondary Quote)**:
+    - Source: `https://api.finmindtrade.com/api/v4/data`
+    - Endpoint: `TaiwanStockTick`
+    - Auth: Requires API Token (free tier available).
+
+- **Yahoo Finance (Fallback Quote)**:
+    - Source: `https://query1.finance.yahoo.com/v8/finance/chart/{symbol}.TW`
+    - Note: Good for historical, but can provide delayed real-time price.
+
+- **Google News (Primary News)**:
+    - Source: `https://news.google.com/rss/search?q={keyword}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`
+    - Format: RSS XML. Needs parsing (e.g., `rss-parser` or `cheerio`).
+
+- **Yahoo News (Secondary News)**:
+    - Source: `https://tw.stock.yahoo.com/rss?category=...` (or search RSS if available).
+    - Alternative: Scrape Yahoo Stock News search results if RSS is limited.
+
     stack?: string
   }
   

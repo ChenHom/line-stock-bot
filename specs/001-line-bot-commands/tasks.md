@@ -56,14 +56,17 @@
 ### Implementation Tasks (Tests optional - add if requested by devs)
 
 - [X] T011 [P] [US1] Implement Fuse.js-based fuzzy matcher, `lib/symbol.ts` with 80% confidence threshold and tests in `tests/unit/symbol.test.ts` - file paths: `lib/symbol.ts`, `tests/unit/symbol.test.ts`
+- [X] T011-B [US1] Refactor fuzzy matcher in `lib/symbol.ts` to return multiple results (top 5) instead of single result - file path: `lib/symbol.ts`
 - [X] T012 [P] [US1] Implement TWSE provider at `lib/providers/quote/twse.ts` with Zod validation using `lib/schemas.ts` - file path: `lib/providers/quote/twse.ts`
 - [X] T013 [P] [US1] Implement FinMind provider at `lib/providers/quote/finMind.ts` with token auth + Zod validation - file path: `lib/providers/quote/finMind.ts`
 - [x] T014 [US1] Update `api/line/webhook.ts` to handle `股價` command and reply with Flex Message
 - [x] T015 [US1] Implement Yahoo Finance session flow (Cookie/Crumb) in `lib/providers/quote/yahooRapid.ts` (Optional backup)
 - [x] T016 [US1] Create unit tests for quote providers in `tests/unit/providers/quote.test.ts`
 - [X] T015 [P] [US1] Create stock quote Flex Message template `createStockQuoteMessage` in `lib/flex.ts` (include quick reply variation) - file path: `lib/flex.ts`
+- [X] T015-B [US1] Add `createMultiMatchMessage` template to `lib/flex.ts` for ambiguous stock selection - file path: `lib/flex.ts`
 - [X] T016 [US1] Implement webhook handler for `股價` command in `api/line/webhook.ts` including parsing, `resolveSymbol`, `getQuoteWithFallback` and reply with `createStockQuoteMessage` - file path: `api/line/webhook.ts`
 - [X] T017 [US1] Add error handling for invalid symbol and low-confidence fuzzy matches in `api/line/webhook.ts` (provide helpful messages and quick replies) - file path: `api/line/webhook.ts`
+- [X] T017-B [US1] Update `api/line/webhook.ts` to handle multiple fuzzy matches and reply with selection Flex Message - file path: `api/line/webhook.ts`
 - [X] T018 [US1] Add stale cache handling and stale notice (「資料可能稍有延遲」) in `api/line/webhook.ts` and include tests in `tests/integration/webhook.test.ts` - file paths: `api/line/webhook.ts`, `tests/integration/webhook.test.ts`
 
 **Dependencies**: Phase 2 must be complete before these tasks.
