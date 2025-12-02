@@ -56,18 +56,17 @@ These contracts describe the intended API for provider modules used by the featu
   - Logs cache errors at `warn` level with operation details
 - **Logging**: Logs cache hits, misses, errors, and stale-serve events
 
-## resolveSymbol(input: string): Promise<FuzzyMatchResult | string>
+## resolveSymbol(input: string): Promise<FuzzyMatchResult[] | string | null>
 - **Input**: `input` - either a stock code (`\d{4}`) or company name
 - **Behavior**: 
   - If input matches numeric pattern (`\d{4}`): returns as-is (symbol code)
   - Otherwise: uses Fuse.js fuzzy matcher on stock name mapping
   - Calculates confidence score (0-100%)
-  - If confidence >= 80%: returns `FuzzyMatchResult` with matched symbol
-  - If confidence < 80%: returns null (multiple ambiguous matches)
+  - Returns list of matches sorted by confidence
 - **Output**: 
   - Stock code (string) if exact numeric match
-  - `FuzzyMatchResult { symbol, name, confidence }` if fuzzy match >= 80%
-  - `null` if no confident match found
+  - `FuzzyMatchResult[]` (list of matches) if fuzzy match found
+  - `null` if no match found
 - **Fallback**: Returns original input if fuzzy matching fails (allows provider to attempt lookup)
 
 ## Provider Configuration

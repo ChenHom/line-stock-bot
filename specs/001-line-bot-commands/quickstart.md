@@ -86,7 +86,7 @@ help           # Show all available commands
 
 Expected behaviors:
 - Quote queries return Flex Message card with price, change%, volume
-- Fuzzy matching suggests top 2 matches if confidence > 80%
+- Fuzzy matching shows list of similar stocks if multiple matches found
 - News queries return 3-5 news items in carousel format (title, source, time, image only)
 - Stale cache warning if providers fail: "資料可能稍有延遲"
 - Error message if all providers fail and no cache: "目前無法取得資料，請稍後再試"

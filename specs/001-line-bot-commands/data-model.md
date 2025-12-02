@@ -56,7 +56,11 @@ Parsing Rules:
 
 Validation Rules:
 - `confidence` MUST be between 0-100
-- Returns null if confidence < 80% threshold
+- Returns list of matches if multiple results found (sorted by confidence)
+
+### Stock (Reference Data)
+- `symbol` (string) - stock symbol (e.g., "2330")
+- `name` (string) - stock name (e.g., "台積電")
 
 ### Cache Entry
 - `key` (string) - cache key pattern
