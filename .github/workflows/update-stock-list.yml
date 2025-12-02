@@ -31,8 +31,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: chore: update stock list [automated]
-          branch: update/stock-list-${{ github.run_id }}
-          title: chore: update stock list [automated]
-          body: Updated stock list by scheduled action
-          labels: automated
+          commit-message: "chore: update stock list [automated]"
+          branch: "update/stock-list-${{ github.run_id }}"
+          title: "chore: update stock list [automated]"
+          body: "Updated stock list by scheduled action"
+          labels: "automated"
