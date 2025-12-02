@@ -1,4 +1,5 @@
 import Fuse from 'fuse.js'
+import { STOCK_LIST } from './stock-list'
 
 const NUMERIC_SYMBOL_REGEX = /^\d{4}$/
 export const CONFIDENCE_THRESHOLD = 80
@@ -16,28 +17,7 @@ export interface FuzzyMatchResult {
   score?: number
 }
 
-const STOCK_DICTIONARY: StockDictionaryEntry[] = [
-  { symbol: '2330', name: '台積電', aliases: ['TSMC', '台積'] },
-  { symbol: '2454', name: '聯發科', aliases: ['MediaTek'] },
-  { symbol: '2317', name: '鴻海', aliases: ['Foxconn'] },
-  { symbol: '2308', name: '台達電', aliases: ['Delta'] },
-  { symbol: '2303', name: '聯電', aliases: ['UMC'] },
-  { symbol: '2311', name: '日月光投控', aliases: ['ASE', '日月光'] },
-  { symbol: '2327', name: '國巨' },
-  { symbol: '2603', name: '長榮' },
-  { symbol: '2609', name: '陽明' },
-  { symbol: '2002', name: '中鋼' },
-  { symbol: '2357', name: '華碩', aliases: ['ASUS'] },
-  { symbol: '2382', name: '廣達', aliases: ['Quanta'] },
-  { symbol: '4938', name: '和碩', aliases: ['PEGATRON'] },
-  { symbol: '3008', name: '大立光' },
-  { symbol: '2884', name: '玉山金' },
-  { symbol: '2886', name: '兆豐金' },
-  { symbol: '2881', name: '富邦金' },
-  { symbol: '2891', name: '中信金' },
-  { symbol: '2882', name: '國泰金' },
-  { symbol: '2887', name: '台新金' }
-]
+const STOCK_DICTIONARY: StockDictionaryEntry[] = STOCK_LIST ?? []
 
 const fuse = new Fuse<StockDictionaryEntry>(STOCK_DICTIONARY, {
   includeScore: true,

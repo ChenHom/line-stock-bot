@@ -1,0 +1,38 @@
+name: Update stock list
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at 00:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run update-stocks
+        run: pnpm run update-stocks
+
+      - name: Create PR if changes
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: chore: update stock list [automated]
+          branch: update/stock-list-${{ github.run_id }}
+          title: chore: update stock list [automated]
+          body: Updated stock list by scheduled action
+          labels: automated
