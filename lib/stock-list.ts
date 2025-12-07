@@ -3,10 +3,10 @@
  *
  * ⚠️ 此檔案由 scripts/update-stocks.ts 自動產生，請勿手動編輯
  *
- * 上次更新: 2025-12-02T06:08:13.817Z
- * 上市股票: 1326
- * 上櫃股票: 978
- * 總計: 2304
+ * 上次更新: 2025-12-07T00:31:15.911Z
+ * 上市股票: 1324
+ * 上櫃股票: 977
+ * 總計: 2301
  */
 
 import type { StockDictionaryEntry } from '../lib/types'
@@ -475,11 +475,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "00714",
     "name": "群益道瓊美國地產",
-    "aliases": []
-  },
-  {
-    "symbol": "00715L",
-    "name": "期街口布蘭特正2",
     "aliases": []
   },
   {
@@ -1633,18 +1628,8 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "02001S",
-    "name": "策元大加權策略N",
-    "aliases": []
-  },
-  {
     "symbol": "020020",
     "name": "元大台股領航N",
-    "aliases": []
-  },
-  {
-    "symbol": "020023",
-    "name": "元大櫃買半導體N",
     "aliases": []
   },
   {
@@ -11833,7 +11818,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
 ]
 
 export const STOCK_COUNT = {
-  twse: 1326,
-  tpex: 978,
-  total: 2304
+  twse: 1324,
+  tpex: 977,
+  total: 2301
 }
