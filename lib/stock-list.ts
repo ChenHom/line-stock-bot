@@ -3,10 +3,10 @@
  *
  * ⚠️ 此檔案由 scripts/update-stocks.ts 自動產生，請勿手動編輯
  *
- * 上次更新: 2025-12-02T06:08:13.817Z
- * 上市股票: 1326
- * 上櫃股票: 978
- * 總計: 2304
+ * 上次更新: 2025-12-14T00:31:13.554Z
+ * 上市股票: 1325
+ * 上櫃股票: 981
+ * 總計: 2306
  */
 
 import type { StockDictionaryEntry } from '../lib/types'
@@ -1633,18 +1633,8 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "02001S",
-    "name": "策元大加權策略N",
-    "aliases": []
-  },
-  {
     "symbol": "020020",
     "name": "元大台股領航N",
-    "aliases": []
-  },
-  {
-    "symbol": "020023",
-    "name": "元大櫃買半導體N",
     "aliases": []
   },
   {
@@ -6041,11 +6031,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "3593",
-    "name": "力銘",
-    "aliases": []
-  },
-  {
     "symbol": "3594",
     "name": "磐儀",
     "aliases": []
@@ -9853,6 +9838,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6730",
+    "name": "常廣",
+    "aliases": []
+  },
+  {
     "symbol": "6732",
     "name": "昇佳電子",
     "aliases": []
@@ -10264,6 +10254,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6910",
+    "name": "德鴻",
+    "aliases": []
+  },
+  {
     "symbol": "6913",
     "name": "鴻呈",
     "aliases": []
@@ -10641,8 +10636,18 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "7767",
+    "name": "仁大資訊",
+    "aliases": []
+  },
+  {
     "symbol": "7769",
     "name": "鴻勁",
+    "aliases": []
+  },
+  {
+    "symbol": "7770",
+    "name": "君曜",
     "aliases": []
   },
   {
@@ -10923,6 +10928,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "8101",
     "name": "華冠",
+    "aliases": []
+  },
+  {
+    "symbol": "8103",
+    "name": "瀚荃",
     "aliases": []
   },
   {
@@ -11833,7 +11843,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
 ]
 
 export const STOCK_COUNT = {
-  twse: 1326,
-  tpex: 978,
-  total: 2304
+  twse: 1325,
+  tpex: 981,
+  total: 2306
 }
