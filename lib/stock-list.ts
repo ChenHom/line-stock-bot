@@ -3,15 +3,85 @@
  *
  * ⚠️ 此檔案由 scripts/update-stocks.ts 自動產生，請勿手動編輯
  *
- * 上次更新: 2025-12-02T06:08:13.817Z
- * 上市股票: 1326
- * 上櫃股票: 978
- * 總計: 2304
+ * 上次更新: 2026-10-25T03:43:20.339Z
+ * 上市股票: 1383
+ * 上櫃股票: 1017
+ * 總計: 2400
  */
 
 import type { StockDictionaryEntry } from '../lib/types'
 
 export const STOCK_LIST: StockDictionaryEntry[] = [
+  {
+    "symbol": "00400A",
+    "name": "主動國泰動能高息",
+    "aliases": []
+  },
+  {
+    "symbol": "00401A",
+    "name": "主動摩根台灣鑫收",
+    "aliases": []
+  },
+  {
+    "symbol": "00402A",
+    "name": "主動安聯美國科技",
+    "aliases": []
+  },
+  {
+    "symbol": "00403A",
+    "name": "主動統一升級50",
+    "aliases": []
+  },
+  {
+    "symbol": "00404A",
+    "name": "主動聯博動能50",
+    "aliases": []
+  },
+  {
+    "symbol": "00405A",
+    "name": "主動富邦台灣龍耀",
+    "aliases": []
+  },
+  {
+    "symbol": "00406A",
+    "name": "主動中信台灣收益",
+    "aliases": []
+  },
+  {
+    "symbol": "00407A",
+    "name": "主動凱基台灣",
+    "aliases": []
+  },
+  {
+    "symbol": "00408A",
+    "name": "主動第一金優股息",
+    "aliases": []
+  },
+  {
+    "symbol": "00409A",
+    "name": "主動復華全球50",
+    "aliases": []
+  },
+  {
+    "symbol": "00410A",
+    "name": "主動永豐科技趨勢",
+    "aliases": []
+  },
+  {
+    "symbol": "00411A",
+    "name": "主動統一前沿科技",
+    "aliases": []
+  },
+  {
+    "symbol": "00412A",
+    "name": "主動安聯亞半導體",
+    "aliases": []
+  },
+  {
+    "symbol": "00415A",
+    "name": "主動群益核心50",
+    "aliases": []
+  },
   {
     "symbol": "0050",
     "name": "元大台灣50",
@@ -29,7 +99,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "0053",
-    "name": "元大電子",
+    "name": "元大科技市值",
     "aliases": []
   },
   {
@@ -699,7 +769,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "00775B",
-    "name": "新光投等債15+",
+    "name": "台新投等債15+",
     "aliases": []
   },
   {
@@ -773,11 +843,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "00793B",
-    "name": "群益AAA-A醫療債",
-    "aliases": []
-  },
-  {
     "symbol": "00795B",
     "name": "中信美國公債20年",
     "aliases": []
@@ -819,7 +884,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "00844B",
-    "name": "新光15年IG金融債",
+    "name": "台新15年IG金融債",
     "aliases": []
   },
   {
@@ -830,11 +895,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "00846B",
     "name": "富邦歐洲銀行債",
-    "aliases": []
-  },
-  {
-    "symbol": "00847B",
-    "name": "中信美國市政債",
     "aliases": []
   },
   {
@@ -919,7 +979,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "00867B",
-    "name": "新光A-BBB電信債",
+    "name": "台新A-BBB電信債",
     "aliases": []
   },
   {
@@ -955,11 +1015,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "00882",
     "name": "中信中國高股息",
-    "aliases": []
-  },
-  {
-    "symbol": "00883B",
-    "name": "中信ESG投資級債",
     "aliases": []
   },
   {
@@ -1059,7 +1114,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "00904",
-    "name": "新光臺灣半導體30",
+    "name": "台新臺灣半導體30",
     "aliases": []
   },
   {
@@ -1374,7 +1429,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "00970B",
-    "name": "新光BBB投等債20+",
+    "name": "台新BBB投等債20+",
     "aliases": []
   },
   {
@@ -1404,7 +1459,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "009803",
-    "name": "保德信市值動能50",
+    "name": "玉山市值動能50",
     "aliases": []
   },
   {
@@ -1414,7 +1469,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "009805",
-    "name": "新光美國電力基建",
+    "name": "台新美國電力基建",
     "aliases": []
   },
   {
@@ -1459,7 +1514,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "009810",
-    "name": "保德信全球藍籌",
+    "name": "玉山全球藍籌100",
     "aliases": []
   },
   {
@@ -1475,6 +1530,36 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "009813",
     "name": "貝萊德標普卓越50",
+    "aliases": []
+  },
+  {
+    "symbol": "009814",
+    "name": "富邦標普500",
+    "aliases": []
+  },
+  {
+    "symbol": "009815",
+    "name": "大華美國MAG7+",
+    "aliases": []
+  },
+  {
+    "symbol": "009816",
+    "name": "凱基台灣TOP50",
+    "aliases": []
+  },
+  {
+    "symbol": "009817",
+    "name": "國泰日本不動產",
+    "aliases": []
+  },
+  {
+    "symbol": "009818",
+    "name": "華南永昌NASDAQxT",
+    "aliases": []
+  },
+  {
+    "symbol": "009819",
+    "name": "中信數據及電力",
     "aliases": []
   },
   {
@@ -1498,6 +1583,56 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "009820",
+    "name": "元大納斯達克精選",
+    "aliases": []
+  },
+  {
+    "symbol": "009821",
+    "name": "野村稀土關鍵資源",
+    "aliases": []
+  },
+  {
+    "symbol": "009822",
+    "name": "華南永昌未來金融",
+    "aliases": []
+  },
+  {
+    "symbol": "009823",
+    "name": "群益S&P500",
+    "aliases": []
+  },
+  {
+    "symbol": "009824",
+    "name": "群益美國科技巨頭",
+    "aliases": []
+  },
+  {
+    "symbol": "009825",
+    "name": "聯邦美國金融創新",
+    "aliases": []
+  },
+  {
+    "symbol": "009826",
+    "name": "貝萊德世界股票",
+    "aliases": []
+  },
+  {
+    "symbol": "009827",
+    "name": "玉山未來全球算力",
+    "aliases": []
+  },
+  {
+    "symbol": "009828",
+    "name": "中信台日韓PCB",
+    "aliases": []
+  },
+  {
+    "symbol": "009829",
+    "name": "大華韓國KOSPI50",
+    "aliases": []
+  },
+  {
     "symbol": "00982A",
     "name": "主動群益台灣強棒",
     "aliases": []
@@ -1510,6 +1645,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "00982D",
     "name": "主動富邦動態入息",
+    "aliases": []
+  },
+  {
+    "symbol": "00982T",
+    "name": "平衡兆豐台美動能",
     "aliases": []
   },
   {
@@ -1538,6 +1678,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "00984D",
+    "name": "主動聯博全球非投",
+    "aliases": []
+  },
+  {
     "symbol": "00985A",
     "name": "主動野村台灣50",
     "aliases": []
@@ -1545,6 +1690,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "00985B",
     "name": "群益ESG投等債0-5",
+    "aliases": []
+  },
+  {
+    "symbol": "00985D",
+    "name": "主動貝萊德優投等",
     "aliases": []
   },
   {
@@ -1558,13 +1708,108 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "00986D",
+    "name": "主動復華金融債息",
+    "aliases": []
+  },
+  {
+    "symbol": "00987A",
+    "name": "主動台新優勢成長",
+    "aliases": []
+  },
+  {
+    "symbol": "00987B",
+    "name": "野村10+澳洲公債",
+    "aliases": []
+  },
+  {
+    "symbol": "00987D",
+    "name": "主動統一美債量化",
+    "aliases": []
+  },
+  {
     "symbol": "00988A",
     "name": "主動統一全球創新",
     "aliases": []
   },
   {
+    "symbol": "00988B",
+    "name": "玉山嚴選非投債",
+    "aliases": []
+  },
+  {
     "symbol": "00989A",
     "name": "主動摩根美國科技",
+    "aliases": []
+  },
+  {
+    "symbol": "00989B",
+    "name": "台新美國非投等債",
+    "aliases": []
+  },
+  {
+    "symbol": "00990A",
+    "name": "主動元大AI新經濟",
+    "aliases": []
+  },
+  {
+    "symbol": "00990B",
+    "name": "國泰收益非投等債",
+    "aliases": []
+  },
+  {
+    "symbol": "00991A",
+    "name": "主動復華未來50",
+    "aliases": []
+  },
+  {
+    "symbol": "00991B",
+    "name": "貝萊德A級公司債",
+    "aliases": []
+  },
+  {
+    "symbol": "00992A",
+    "name": "主動群益科技創新",
+    "aliases": []
+  },
+  {
+    "symbol": "00992B",
+    "name": "街口優息非投債",
+    "aliases": []
+  },
+  {
+    "symbol": "00993A",
+    "name": "主動安聯台灣",
+    "aliases": []
+  },
+  {
+    "symbol": "00994A",
+    "name": "主動第一金台股優",
+    "aliases": []
+  },
+  {
+    "symbol": "00995A",
+    "name": "主動中信台灣卓越",
+    "aliases": []
+  },
+  {
+    "symbol": "00996A",
+    "name": "主動兆豐台灣豐收",
+    "aliases": []
+  },
+  {
+    "symbol": "00997A",
+    "name": "主動群益美國增長",
+    "aliases": []
+  },
+  {
+    "symbol": "00998A",
+    "name": "主動復華金融股息",
+    "aliases": []
+  },
+  {
+    "symbol": "00999A",
+    "name": "主動野村臺灣高息",
     "aliases": []
   },
   {
@@ -1618,23 +1863,8 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "02001B",
-    "name": "統一美國政府債N",
-    "aliases": []
-  },
-  {
     "symbol": "02001L",
     "name": "富邦蘋果正二N",
-    "aliases": []
-  },
-  {
-    "symbol": "02001R",
-    "name": "富邦蘋果反一N",
-    "aliases": []
-  },
-  {
-    "symbol": "02001S",
-    "name": "策元大加權策略N",
     "aliases": []
   },
   {
@@ -1643,18 +1873,8 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "020023",
-    "name": "元大櫃買半導體N",
-    "aliases": []
-  },
-  {
     "symbol": "020025",
     "name": "統一亞洲半導體N",
-    "aliases": []
-  },
-  {
-    "symbol": "020027",
-    "name": "元大上櫃ESG成長N",
     "aliases": []
   },
   {
@@ -1710,11 +1930,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "020038",
     "name": "元大ESG配息N",
-    "aliases": []
-  },
-  {
-    "symbol": "020039",
-    "name": "元大加權N",
     "aliases": []
   },
   {
@@ -2323,11 +2538,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "1516",
-    "name": "川飛",
-    "aliases": []
-  },
-  {
     "symbol": "1517",
     "name": "利奇",
     "aliases": []
@@ -2345,11 +2555,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "1522",
     "name": "堤維西",
-    "aliases": []
-  },
-  {
-    "symbol": "1522A",
-    "name": "堤維西甲特",
     "aliases": []
   },
   {
@@ -2503,13 +2708,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "1589",
-    "name": "永冠-KY",
-    "aliases": [
-      "永冠"
-    ]
-  },
-  {
     "symbol": "1590",
     "name": "亞德客-KY",
     "aliases": [
@@ -2609,6 +2807,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "1623",
+    "name": "大東電",
+    "aliases": []
+  },
+  {
     "symbol": "1626",
     "name": "艾美特-KY",
     "aliases": [
@@ -2677,7 +2880,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "1721",
-    "name": "三晃",
+    "name": "國慶科技",
     "aliases": []
   },
   {
@@ -2778,6 +2981,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "1777",
     "name": "生泰",
+    "aliases": []
+  },
+  {
+    "symbol": "1780",
+    "name": "立弘",
     "aliases": []
   },
   {
@@ -3096,6 +3304,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "2072",
+    "name": "世紀風電",
+    "aliases": []
+  },
+  {
     "symbol": "2073",
     "name": "雄順",
     "aliases": []
@@ -3230,6 +3443,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     ]
   },
   {
+    "symbol": "2237",
+    "name": "華德動能-創",
+    "aliases": []
+  },
+  {
     "symbol": "2239",
     "name": "英利-KY",
     "aliases": [
@@ -3259,6 +3477,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": [
       "華勝"
     ]
+  },
+  {
+    "symbol": "2249",
+    "name": "湧盛",
+    "aliases": []
   },
   {
     "symbol": "2250",
@@ -4377,7 +4600,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "2740",
-    "name": "天蔥",
+    "name": "華軒",
     "aliases": []
   },
   {
@@ -4510,11 +4733,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "2855",
     "name": "統一證",
-    "aliases": []
-  },
-  {
-    "symbol": "2867",
-    "name": "三商壽",
     "aliases": []
   },
   {
@@ -4749,6 +4967,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "2938",
+    "name": "床的世界",
+    "aliases": []
+  },
+  {
     "symbol": "2939",
     "name": "永邑-KY",
     "aliases": [
@@ -4936,11 +5159,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "3036A",
-    "name": "文曄甲特",
-    "aliases": []
-  },
-  {
     "symbol": "3037",
     "name": "欣興",
     "aliases": []
@@ -5102,7 +5320,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "3086",
-    "name": "華義",
+    "name": "華義*",
     "aliases": []
   },
   {
@@ -5666,11 +5884,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "3426",
-    "name": "台興",
-    "aliases": []
-  },
-  {
     "symbol": "3430",
     "name": "奇鈦科",
     "aliases": []
@@ -5721,11 +5934,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "3454",
-    "name": "晶睿",
-    "aliases": []
-  },
-  {
     "symbol": "3455",
     "name": "由田",
     "aliases": []
@@ -5763,6 +5971,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "3484",
     "name": "崧騰",
+    "aliases": []
+  },
+  {
+    "symbol": "3485",
+    "name": "敘豐",
     "aliases": []
   },
   {
@@ -5847,7 +6060,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "3521",
-    "name": "鴻翊",
+    "name": "台鋼建設",
     "aliases": []
   },
   {
@@ -6362,6 +6575,13 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     ]
   },
   {
+    "symbol": "3718",
+    "name": "中光電投控",
+    "aliases": [
+      "中光電"
+    ]
+  },
+  {
     "symbol": "4102",
     "name": "永日",
     "aliases": []
@@ -6454,11 +6674,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "4129",
     "name": "聯合",
-    "aliases": []
-  },
-  {
-    "symbol": "4130",
-    "name": "健亞",
     "aliases": []
   },
   {
@@ -6572,6 +6787,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "4169",
+    "name": "泰宗",
+    "aliases": []
+  },
+  {
     "symbol": "4171",
     "name": "瑞基",
     "aliases": []
@@ -6590,6 +6810,13 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "symbol": "4175",
     "name": "杏一",
     "aliases": []
+  },
+  {
+    "symbol": "4178",
+    "name": "永笙-KY",
+    "aliases": [
+      "永笙"
+    ]
   },
   {
     "symbol": "4183",
@@ -6611,6 +6838,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "4192",
     "name": "杏國",
+    "aliases": []
+  },
+  {
+    "symbol": "4195",
+    "name": "基米-創",
     "aliases": []
   },
   {
@@ -6794,7 +7026,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "4530",
-    "name": "宏易",
+    "name": "天意能創",
     "aliases": []
   },
   {
@@ -6980,6 +7212,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     ]
   },
   {
+    "symbol": "4582",
+    "name": "聚恆-創",
+    "aliases": []
+  },
+  {
     "symbol": "4583",
     "name": "台灣精銳",
     "aliases": []
@@ -6997,6 +7234,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "4588",
     "name": "玖鼎電力",
+    "aliases": []
+  },
+  {
+    "symbol": "4590",
+    "name": "富田-創",
     "aliases": []
   },
   {
@@ -7113,7 +7355,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "4747",
-    "name": "強生",
+    "name": "強生*",
     "aliases": []
   },
   {
@@ -7177,13 +7419,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "symbol": "4772",
     "name": "台特化",
     "aliases": []
-  },
-  {
-    "symbol": "4804",
-    "name": "大略-KY",
-    "aliases": [
-      "大略"
-    ]
   },
   {
     "symbol": "4806",
@@ -7357,7 +7592,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "4953",
-    "name": "緯軟",
+    "name": "緯致",
     "aliases": []
   },
   {
@@ -7436,11 +7671,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "4979",
     "name": "華星光",
-    "aliases": []
-  },
-  {
-    "symbol": "4987",
-    "name": "科誠",
     "aliases": []
   },
   {
@@ -7827,13 +8057,8 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "5371",
-    "name": "中光電",
-    "aliases": []
-  },
-  {
     "symbol": "5381",
-    "name": "合正",
+    "name": "光譜",
     "aliases": []
   },
   {
@@ -8123,6 +8348,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     ]
   },
   {
+    "symbol": "5547",
+    "name": "久舜",
+    "aliases": []
+  },
+  {
     "symbol": "5548",
     "name": "安倉",
     "aliases": []
@@ -8221,7 +8451,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "5904",
-    "name": "寶雅",
+    "name": "寶雅*",
     "aliases": []
   },
   {
@@ -8284,6 +8514,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6028",
+    "name": "公勝保經",
+    "aliases": []
+  },
+  {
     "symbol": "6101",
     "name": "寬魚國際",
     "aliases": []
@@ -8310,7 +8545,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "6111",
-    "name": "大宇資",
+    "name": "光聚晶電",
     "aliases": []
   },
   {
@@ -8436,11 +8671,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6141",
     "name": "柏承",
-    "aliases": []
-  },
-  {
-    "symbol": "6142",
-    "name": "友勁",
     "aliases": []
   },
   {
@@ -8870,7 +9100,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "6241",
-    "name": "易通展",
+    "name": "鑫永洋",
     "aliases": []
   },
   {
@@ -8951,6 +9181,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6271",
     "name": "同欣電",
+    "aliases": []
+  },
+  {
+    "symbol": "6272",
+    "name": "驊陞",
     "aliases": []
   },
   {
@@ -9082,7 +9317,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "6423",
-    "name": "億而得-創",
+    "name": "億而得",
     "aliases": []
   },
   {
@@ -9174,6 +9409,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6465",
     "name": "威潤",
+    "aliases": []
+  },
+  {
+    "symbol": "6467",
+    "name": "泰合",
     "aliases": []
   },
   {
@@ -9549,6 +9789,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6604",
+    "name": "儒億",
+    "aliases": []
+  },
+  {
     "symbol": "6605",
     "name": "帝寶",
     "aliases": []
@@ -9596,6 +9841,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": [
       "共信"
     ]
+  },
+  {
+    "symbol": "6620",
+    "name": "漢達",
+    "aliases": []
   },
   {
     "symbol": "6624",
@@ -9843,6 +10093,16 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6722",
+    "name": "輝創",
+    "aliases": []
+  },
+  {
+    "symbol": "6725",
+    "name": "矽科宏晟",
+    "aliases": []
+  },
+  {
     "symbol": "6727",
     "name": "亞泰金屬",
     "aliases": []
@@ -9850,6 +10110,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6728",
     "name": "上洋",
+    "aliases": []
+  },
+  {
+    "symbol": "6730",
+    "name": "常廣",
     "aliases": []
   },
   {
@@ -10034,11 +10299,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "6806",
-    "name": "森崴能源",
-    "aliases": []
-  },
-  {
     "symbol": "6807",
     "name": "峰源-KY",
     "aliases": [
@@ -10200,6 +10460,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6884",
+    "name": "海柏特",
+    "aliases": []
+  },
+  {
     "symbol": "6885",
     "name": "全福生技",
     "aliases": []
@@ -10259,8 +10524,25 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6907",
+    "name": "雅特力-KY",
+    "aliases": [
+      "雅特力"
+    ]
+  },
+  {
+    "symbol": "6908",
+    "name": "宏碁遊戲-創",
+    "aliases": []
+  },
+  {
     "symbol": "6909",
     "name": "創控",
+    "aliases": []
+  },
+  {
+    "symbol": "6910",
+    "name": "德鴻",
     "aliases": []
   },
   {
@@ -10286,6 +10568,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6919",
     "name": "康霈*",
+    "aliases": []
+  },
+  {
+    "symbol": "6921",
+    "name": "嘉雨思-創",
     "aliases": []
   },
   {
@@ -10331,6 +10618,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     ]
   },
   {
+    "symbol": "6934",
+    "name": "心誠鎂",
+    "aliases": []
+  },
+  {
     "symbol": "6936",
     "name": "永鴻生技",
     "aliases": []
@@ -10346,8 +10638,18 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "6945",
+    "name": "圓祥生技",
+    "aliases": []
+  },
+  {
+    "symbol": "6947",
+    "name": "台鎔科技",
+    "aliases": []
+  },
+  {
     "symbol": "6949",
-    "name": "沛爾生醫-創",
+    "name": "沛爾生醫*-創",
     "aliases": []
   },
   {
@@ -10380,6 +10682,16 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6958",
     "name": "日盛台駿",
+    "aliases": []
+  },
+  {
+    "symbol": "6958A",
+    "name": "日盛台駿甲特",
+    "aliases": []
+  },
+  {
+    "symbol": "6961",
+    "name": "旅天下",
     "aliases": []
   },
   {
@@ -10419,6 +10731,16 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "6982",
     "name": "大井泵浦",
+    "aliases": []
+  },
+  {
+    "symbol": "6983",
+    "name": "華洋精機",
+    "aliases": []
+  },
+  {
+    "symbol": "6986",
+    "name": "和迅",
     "aliases": []
   },
   {
@@ -10474,6 +10796,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "7642",
     "name": "昶瑞機電",
+    "aliases": []
+  },
+  {
+    "symbol": "7689",
+    "name": "大鵬科CLMX",
     "aliases": []
   },
   {
@@ -10636,8 +10963,23 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "7760",
+    "name": "享溫馨",
+    "aliases": []
+  },
+  {
     "symbol": "7765",
     "name": "中華資安",
+    "aliases": []
+  },
+  {
+    "symbol": "7767",
+    "name": "仁大資訊",
+    "aliases": []
+  },
+  {
+    "symbol": "7768",
+    "name": "頌勝科技",
     "aliases": []
   },
   {
@@ -10646,8 +10988,23 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "7770",
+    "name": "君曜",
+    "aliases": []
+  },
+  {
+    "symbol": "7772",
+    "name": "耀穎",
+    "aliases": []
+  },
+  {
+    "symbol": "7777",
+    "name": "能率亞洲",
+    "aliases": []
+  },
+  {
     "symbol": "7780",
-    "name": "大研生醫",
+    "name": "大研生醫*",
     "aliases": []
   },
   {
@@ -10671,8 +11028,128 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "7792",
+    "name": "安葆",
+    "aliases": []
+  },
+  {
+    "symbol": "7794",
+    "name": "宏碁智新",
+    "aliases": []
+  },
+  {
+    "symbol": "7795",
+    "name": "長廣",
+    "aliases": []
+  },
+  {
     "symbol": "7799",
     "name": "禾榮科",
+    "aliases": []
+  },
+  {
+    "symbol": "7803",
+    "name": "雲象科技-創",
+    "aliases": []
+  },
+  {
+    "symbol": "7805",
+    "name": "威聯通",
+    "aliases": []
+  },
+  {
+    "symbol": "7806",
+    "name": "精華生醫",
+    "aliases": []
+  },
+  {
+    "symbol": "7810",
+    "name": "捷創科技",
+    "aliases": []
+  },
+  {
+    "symbol": "7811",
+    "name": "民盛",
+    "aliases": []
+  },
+  {
+    "symbol": "7812",
+    "name": "稜研科技*-創",
+    "aliases": []
+  },
+  {
+    "symbol": "7814",
+    "name": "海昌生技",
+    "aliases": []
+  },
+  {
+    "symbol": "7818",
+    "name": "溢泰實業",
+    "aliases": []
+  },
+  {
+    "symbol": "7819",
+    "name": "精誠金融",
+    "aliases": []
+  },
+  {
+    "symbol": "7820",
+    "name": "立盈",
+    "aliases": []
+  },
+  {
+    "symbol": "7821",
+    "name": "神數",
+    "aliases": []
+  },
+  {
+    "symbol": "7822",
+    "name": "倍利科",
+    "aliases": []
+  },
+  {
+    "symbol": "7823",
+    "name": "奧義賽博-KY創",
+    "aliases": []
+  },
+  {
+    "symbol": "7825",
+    "name": "和亞智慧",
+    "aliases": []
+  },
+  {
+    "symbol": "7827",
+    "name": "漢康-KY創",
+    "aliases": []
+  },
+  {
+    "symbol": "7828",
+    "name": "創新服務",
+    "aliases": []
+  },
+  {
+    "symbol": "7835",
+    "name": "永悅健康-創",
+    "aliases": []
+  },
+  {
+    "symbol": "7839",
+    "name": "達人網",
+    "aliases": []
+  },
+  {
+    "symbol": "7842",
+    "name": "天能綠電",
+    "aliases": []
+  },
+  {
+    "symbol": "7855",
+    "name": "和運租車",
+    "aliases": []
+  },
+  {
+    "symbol": "7856",
+    "name": "漢測",
     "aliases": []
   },
   {
@@ -10758,11 +11235,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "8046",
     "name": "南電",
-    "aliases": []
-  },
-  {
-    "symbol": "8047",
-    "name": "星雲",
     "aliases": []
   },
   {
@@ -10926,6 +11398,16 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
+    "symbol": "8102",
+    "name": "傑霖科技",
+    "aliases": []
+  },
+  {
+    "symbol": "8103",
+    "name": "瀚荃",
+    "aliases": []
+  },
+  {
     "symbol": "8104",
     "name": "錸寶",
     "aliases": []
@@ -11021,11 +11503,6 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
     "aliases": []
   },
   {
-    "symbol": "8183",
-    "name": "精星",
-    "aliases": []
-  },
-  {
     "symbol": "8201",
     "name": "無敵",
     "aliases": []
@@ -11108,6 +11585,11 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   {
     "symbol": "8289",
     "name": "泰藝",
+    "aliases": []
+  },
+  {
+    "symbol": "8291",
+    "name": "尚茂",
     "aliases": []
   },
   {
@@ -11359,7 +11841,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "8472",
-    "name": "夠麻吉",
+    "name": "納維康",
     "aliases": []
   },
   {
@@ -11510,7 +11992,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
   },
   {
     "symbol": "8937",
-    "name": "合騏",
+    "name": "合騏*",
     "aliases": []
   },
   {
@@ -11833,7 +12315,7 @@ export const STOCK_LIST: StockDictionaryEntry[] = [
 ]
 
 export const STOCK_COUNT = {
-  twse: 1326,
-  tpex: 978,
-  total: 2304
+  twse: 1383,
+  tpex: 1017,
+  total: 2400
 }
